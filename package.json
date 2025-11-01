@@ -9,7 +9,9 @@
   "dependencies": {
     "@hono/node-server": "^1.19.6",
     "dotenv": "^17.2.3",
-    "hono": "^4.10.4"
+    "drizzle-orm": "^0.44.7",
+    "hono": "^4.10.4",
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
