@@ -150,6 +150,11 @@ export const classroomSchema = z.object({
 
 export type Classroom = z.infer<typeof classroomSchema>;
 
+export const classroomType = z.union([
+  z.literal("created"),
+  z.literal("enrolled"),
+]);
+
 export const createClassroomSchema = classroomSchema.omit({
   id: true,
   description: true,
