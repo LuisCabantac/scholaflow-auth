@@ -15,6 +15,7 @@
     "hono": "^4.10.4",
     "nodemailer": "^7.0.10",
     "postgres": "^3.4.7",
+    "uuid": "^13.0.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
