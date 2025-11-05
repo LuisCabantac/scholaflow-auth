@@ -390,3 +390,5 @@ export const fullNameSchema = z
   .refine((name) => name.trim().split(/\s+/).length >= 2, {
     message: "Please enter both first and last name",
   });
+
+export const emailSchema = z.email();
