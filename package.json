@@ -14,7 +14,8 @@
     "drizzle-orm": "^0.44.7",
     "hono": "^4.10.4",
     "nodemailer": "^7.0.10",
-    "postgres": "^3.4.7"
+    "postgres": "^3.4.7",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
