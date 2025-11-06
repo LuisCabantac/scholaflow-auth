@@ -4,6 +4,6 @@ import { getAccountByUserId } from "../controllers/Accounts.controller.js";
 
 const app = new Hono();
 
-app.get("/accounts/:userId", (c) => getAccountByUserId(c));
+app.get("/:userId", (c) => getAccountByUserId(c));
 
 export default app;
