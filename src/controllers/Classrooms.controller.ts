@@ -1,8 +1,8 @@
 import type { Context } from "hono";
-import { createFactory } from "hono/factory";
 import { between, desc, eq } from "drizzle-orm";
 
 import { db } from "../db/index.js";
+import { generateClassCode } from "../lib/utils.js";
 import { validateSession } from "../lib/auth/index.js";
 import { validateId } from "../lib/validation/index.js";
 import { classroom, enrolledClass } from "../db/schema.js";
@@ -164,8 +164,6 @@ export async function createClassroom(ctx: Context) {
       section,
       room,
       cardBackground,
-      illustrationIndex,
-      code,
       teacherId,
       teacherName,
       teacherImage,
@@ -177,8 +175,8 @@ export async function createClassroom(ctx: Context) {
       section,
       room,
       cardBackground,
-      illustrationIndex,
-      code,
+      illustrationIndex: Math.floor(Math.random() * 5),
+      code: generateClassCode(),
       teacherId,
       teacherName,
       teacherImage,

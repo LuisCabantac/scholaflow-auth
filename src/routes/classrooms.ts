@@ -7,8 +7,8 @@ import {
 
 const app = new Hono();
 
-app.get("/:classId", (c) => getClassByClassId(c));
-
 app.post("/", (c) => createClassroom(c));
+
+app.get("/:classId", (c) => getClassByClassId(c));
 
 export default app;
