@@ -6,6 +6,7 @@ import { serve } from "@hono/node-server";
 import { auth } from "./lib/auth.js";
 
 import users from "./routes/users.js";
+import accounts from "./routes/accounts.js";
 import classrooms from "./routes/classrooms.js";
 
 config({ path: ".env.local" });
@@ -46,6 +47,9 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
 });
 
 app.route(`/${API_VERSION}/api/users`, users);
+
+app.route(`/${API_VERSION}/api/accounts`, accounts);
+
 app.route(`/${API_VERSION}/api/classrooms`, classrooms);
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
