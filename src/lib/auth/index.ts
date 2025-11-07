@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 
 import { db } from "../../db/index.js";
-import { session } from "../../db/schema.js";
+import { session, user } from "../../db/schema.js";
 
 export async function validateSession(ctx: Context) {
   const authHeader = ctx.req.header("Authorization");
@@ -45,9 +45,15 @@ export async function validateSession(ctx: Context) {
       };
     }
 
+    const [userData] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, isAuthorized.userId));
+
     return {
       isValidSession: true,
       userId: isAuthorized.userId,
+      userData: userData,
       message: "Session validated successfully",
       error: null,
       statusCode: 200,
