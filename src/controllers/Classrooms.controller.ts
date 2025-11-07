@@ -158,11 +158,20 @@ export async function createClassroom(ctx: Context) {
   try {
     const body = await ctx.req.json();
 
+    const { isValidSession, userId } = await validateSession(ctx);
+
+    if (!isValidSession) {
+      return ctx.json({
+        message: "Invalid or expired token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
     const {
       name,
       subject,
       section,
-      room,
       cardBackground,
       teacherId,
       teacherName,
@@ -173,7 +182,6 @@ export async function createClassroom(ctx: Context) {
       name,
       subject,
       section,
-      room,
       cardBackground,
       illustrationIndex: Math.floor(Math.random() * 5),
       code: generateClassCode(),
@@ -199,16 +207,6 @@ export async function createClassroom(ctx: Context) {
           .join(", "),
         error: "Bad Request",
         statusCode: 400,
-      });
-    }
-
-    const { isValidSession, userId } = await validateSession(ctx);
-
-    if (!isValidSession) {
-      return ctx.json({
-        message: "Invalid or expired token",
-        error: "Unauthorized",
-        statusCode: 401,
       });
     }
 
