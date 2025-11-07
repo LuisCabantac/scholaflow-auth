@@ -7,6 +7,10 @@ import { validateSession } from "../lib/auth/index.js";
 import { validateId } from "../lib/validation/index.js";
 import { classroom, enrolledClass } from "../db/schema.js";
 import { classroomType, createClassroomSchema } from "../lib/schema/index.js";
+import {
+  getAllEnrolledClassesByClassId,
+  updateEnrolledClass,
+} from "../lib/service/classroom.js";
 
 export async function getAllClasses(ctx: Context) {
   try {
@@ -270,6 +274,174 @@ export async function createClassroom(ctx: Context) {
         error instanceof Error
           ? error.message
           : "Failed to create classroom. Please try again.",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
+export async function updateClassroom(ctx: Context) {
+  try {
+    const { isValidSession, userId, userData } = await validateSession(ctx);
+
+    if (!isValidSession) {
+      return ctx.json({
+        message: "Invalid or expired token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const classId = ctx.req.param("classId");
+
+    if (!classId) {
+      return ctx.json({
+        message: "Class ID parameter is required.",
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const [currentClassData] = await db
+      .select()
+      .from(classroom)
+      .where(eq(classroom.id, classId));
+
+    if (!currentClassData) {
+      return ctx.json({
+        message: "Classroom not found.",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    if (userId !== currentClassData.teacherId) {
+      return ctx.json({
+        message: "You are not authorized to update this classroom.",
+        error: "Forbidden",
+        statusCode: 403,
+      });
+    }
+
+    const body = await ctx.req.json();
+
+    if (!body || Object.keys(body).length === 0) {
+      return ctx.json({
+        message: "Request body is required",
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const {
+      name,
+      subject,
+      section,
+      classDescription,
+      cardBackground,
+      allowStudentsToComment,
+      allowStudentsToPost,
+      updateClassCode,
+    } = body;
+
+    const newClass = {
+      name,
+      subject,
+      section,
+      classDescription,
+      cardBackground,
+      allowStudentsToComment,
+      allowStudentsToPost,
+      updateClassCode,
+    };
+
+    if (
+      updateClassCode ||
+      currentClassData.name !== newClass.name ||
+      currentClassData.subject !== newClass.subject ||
+      currentClassData.teacherName !== userData.name ||
+      currentClassData.teacherImage !== userData.image ||
+      currentClassData.description !== newClass.classDescription ||
+      currentClassData.section !== newClass.section ||
+      currentClassData.cardBackground !== newClass.cardBackground ||
+      currentClassData.allowUsersToComment !==
+        newClass.allowStudentsToComment ||
+      currentClassData.allowUsersToPost !== newClass.allowStudentsToPost
+    ) {
+      const updatedClassData = {
+        name: newClass.name,
+        subject: newClass.subject,
+        section: newClass.section ?? "",
+        description: newClass.classDescription ?? "",
+        teacherName: userData.name,
+        teacherImage: userData.image as string,
+        allowUsersToComment: newClass.allowStudentsToComment,
+        allowUsersToPost: newClass.allowStudentsToPost,
+        cardBackground: newClass.cardBackground,
+        code: updateClassCode ? generateClassCode() : currentClassData.code,
+      };
+
+      const enrolledClasses = await getAllEnrolledClassesByClassId(classId);
+
+      if (enrolledClasses?.length) {
+        for (const enrolledClass of enrolledClasses) {
+          await updateEnrolledClass(enrolledClass.id, {
+            teacherName: userData.name,
+            teacherImage: userData.image ?? "",
+            name: newClass.name,
+            subject: newClass.subject,
+            section: newClass.section,
+            cardBackground: newClass.cardBackground,
+          });
+        }
+      }
+
+      const result = createClassroomSchema.safeParse({
+        ...currentClassData,
+        ...updatedClassData,
+      });
+
+      if (result.error) {
+        return ctx.json({
+          message: result.error.issues.map((issue) => issue.message).join(", "),
+          error: "Bad Request",
+          statusCode: 400,
+        });
+      }
+
+      const [data] = await db
+        .update(classroom)
+        .set(updatedClassData)
+        .where(eq(classroom.id, classId))
+        .returning();
+
+      if (!data) {
+        return ctx.json({
+          message:
+            "Failed to update classroom. Database operation unsuccessful.",
+          error: "Internal Server Error",
+          statusCode: 500,
+        });
+      }
+
+      return ctx.json({
+        message: "Classroom updated successfully",
+        data: `/classroom/class/${data.id}`,
+        statusCode: 201,
+      });
+    }
+
+    return ctx.json({
+      message: "No changes were made to the classroom.",
+      data: `/classroom/class/${currentClassData.id}`,
+      statusCode: 200,
+    });
+  } catch (error) {
+    return ctx.json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to update classroom. Please try again.",
       error: "Internal Server Error",
       statusCode: 500,
     });
