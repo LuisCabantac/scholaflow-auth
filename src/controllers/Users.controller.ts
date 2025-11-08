@@ -58,7 +58,7 @@ export async function getUserByEmail(ctx: Context) {
       message:
         error instanceof Error
           ? error.message
-          : "There was an error retrieving the users data.",
+          : "There was an error retrieving the users data",
       error: "Internal Server Error",
       statusCode: 500,
     });
@@ -103,7 +103,7 @@ export async function getUserById(ctx: Context) {
       message:
         error instanceof Error
           ? error.message
-          : "There was an error retrieving the users data.",
+          : "There was an error retrieving the users data",
       error: "Internal Server Error",
       statusCode: 500,
     });

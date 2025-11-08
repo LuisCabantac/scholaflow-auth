@@ -46,7 +46,7 @@ export async function getAccountByUserId(ctx: Context) {
       message:
         error instanceof Error
           ? error.message
-          : "There was an error retrieving the account data.",
+          : "There was an error retrieving the account data",
       error: "Internal Server Error",
       statusCode: 500,
     });

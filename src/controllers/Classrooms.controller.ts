@@ -37,7 +37,7 @@ export async function getAllClasses(ctx: Context) {
 
     if (isValidClassType.error) {
       return ctx.json({
-        message: "Invalid class type.",
+        message: "Invalid class type",
         error: "Bad Request",
         statusCode: 400,
       });
@@ -93,7 +93,7 @@ export async function getAllClasses(ctx: Context) {
       message:
         error instanceof Error
           ? error.message
-          : "There was an error retrieving the classrooms data.",
+          : "There was an error retrieving the classrooms data",
       error: "Internal Server Error",
       statusCode: 500,
     });
@@ -151,7 +151,7 @@ export async function getClassByClassId(ctx: Context) {
       message:
         error instanceof Error
           ? error.message
-          : "There was an error retrieving the classroom data.",
+          : "There was an error retrieving the classroom data",
       error: "Internal Server Error",
       statusCode: 500,
     });
@@ -257,7 +257,7 @@ export async function createClassroom(ctx: Context) {
 
     if (!data) {
       return ctx.json({
-        message: "Failed to create classroom. Database operation unsuccessful.",
+        message: "Failed to create classroom. Database operation unsuccessful",
         error: "Internal Server Error",
         statusCode: 500,
       });
@@ -273,7 +273,7 @@ export async function createClassroom(ctx: Context) {
       message:
         error instanceof Error
           ? error.message
-          : "Failed to create classroom. Please try again.",
+          : "Failed to create classroom. Please try again",
       error: "Internal Server Error",
       statusCode: 500,
     });
@@ -296,7 +296,7 @@ export async function updateClassroom(ctx: Context) {
 
     if (!classId) {
       return ctx.json({
-        message: "Class ID parameter is required.",
+        message: "Class ID parameter is required",
         error: "Bad Request",
         statusCode: 400,
       });
@@ -309,7 +309,7 @@ export async function updateClassroom(ctx: Context) {
 
     if (!currentClassData) {
       return ctx.json({
-        message: "Classroom not found.",
+        message: "Classroom not found",
         error: "Not Found",
         statusCode: 404,
       });
@@ -317,7 +317,7 @@ export async function updateClassroom(ctx: Context) {
 
     if (userId !== currentClassData.teacherId) {
       return ctx.json({
-        message: "You are not authorized to update this classroom.",
+        message: "You are not authorized to update this classroom",
         error: "Forbidden",
         statusCode: 403,
       });
@@ -418,7 +418,7 @@ export async function updateClassroom(ctx: Context) {
       if (!data) {
         return ctx.json({
           message:
-            "Failed to update classroom. Database operation unsuccessful.",
+            "Failed to update classroom. Database operation unsuccessful",
           error: "Internal Server Error",
           statusCode: 500,
         });
@@ -432,7 +432,7 @@ export async function updateClassroom(ctx: Context) {
     }
 
     return ctx.json({
-      message: "No changes were made to the classroom.",
+      message: "No changes were made to the classroom",
       data: `/classroom/class/${currentClassData.id}`,
       statusCode: 200,
     });
@@ -441,7 +441,7 @@ export async function updateClassroom(ctx: Context) {
       message:
         error instanceof Error
           ? error.message
-          : "Failed to update classroom. Please try again.",
+          : "Failed to update classroom. Please try again",
       error: "Internal Server Error",
       statusCode: 500,
     });
