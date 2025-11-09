@@ -1,6 +1,6 @@
 import { env } from "hono/adapter";
 import { setCookie } from "hono/cookie";
-import { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Context, MiddlewareHandler } from "hono";
 import { createServerClient, parseCookieHeader } from "@supabase/ssr";
 
