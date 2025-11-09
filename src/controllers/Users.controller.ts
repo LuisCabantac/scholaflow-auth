@@ -371,7 +371,6 @@ export async function updateProfile(ctx: Context) {
       data: null,
     });
   } catch (error) {
-    console.log(error);
     return ctx.json({
       message:
         error instanceof Error
