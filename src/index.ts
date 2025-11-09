@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
 
 import { auth } from "./lib/auth.js";
+import { supabaseMiddleware } from "./lib/supabase-client.js";
 
 import users from "./routes/users.js";
 import accounts from "./routes/accounts.js";
@@ -14,6 +15,8 @@ config({ path: ".env.local" });
 const app = new Hono();
 
 const API_VERSION = "v1";
+
+app.use("*", supabaseMiddleware());
 
 app.get("/", (c) => {
   return c.json({
