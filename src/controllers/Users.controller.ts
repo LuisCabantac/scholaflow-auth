@@ -10,6 +10,7 @@ import { editUserSchema, emailSchema } from "../lib/schema/index.js";
 import {
   deleteFileFromBucket,
   uploadAttachments,
+  uploadAttachmentFromBase64,
 } from "../lib/service/bucket.js";
 
 export async function getUserByEmail(ctx: Context) {
@@ -225,12 +226,19 @@ export async function updateProfile(ctx: Context) {
       }
 
       const newProfilePhoto = attachment
-        ? await uploadAttachments(
-            ctx,
-            "avatars",
-            currentUserData.id,
-            attachment as File
-          )
+        ? attachment.base64
+          ? await uploadAttachmentFromBase64(
+              ctx,
+              "avatars",
+              currentUserData.id,
+              attachment as { base64: string; type: string; name: string }
+            )
+          : await uploadAttachments(
+              ctx,
+              "avatars",
+              currentUserData.id,
+              attachment as File
+            )
         : currentUserData.image;
 
       if (
