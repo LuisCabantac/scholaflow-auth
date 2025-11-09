@@ -57,6 +57,7 @@ export async function validateSession(ctx: Context) {
       message: "Session validated successfully",
       error: null,
       statusCode: 200,
+      header: authHeader,
     };
   } catch (error) {
     return {
