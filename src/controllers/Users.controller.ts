@@ -157,7 +157,10 @@ export async function updateProfile(ctx: Context) {
       });
     }
 
-    if (newPassword !== confirmNewPassword) {
+    if (
+      (newPassword || confirmNewPassword) &&
+      newPassword !== confirmNewPassword
+    ) {
       return ctx.json({
         message:
           "Passwords do not match. Please ensure both password fields are identical",
