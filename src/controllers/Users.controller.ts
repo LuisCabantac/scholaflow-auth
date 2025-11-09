@@ -5,8 +5,8 @@ import { db } from "../db/index.js";
 import { auth } from "../lib/auth.js";
 import { account, user } from "../db/schema.js";
 import { validateSession } from "../lib/auth/index.js";
-import { extractAvatarFilePath } from "../lib/utils.js";
 import { editUserSchema, emailSchema } from "../lib/schema/index.js";
+import { extractAvatarFilePath, isBase64Attachment } from "../lib/utils.js";
 import {
   deleteFileFromBucket,
   uploadAttachments,
@@ -226,12 +226,12 @@ export async function updateProfile(ctx: Context) {
       }
 
       const newProfilePhoto = attachment
-        ? attachment.base64
+        ? isBase64Attachment(attachment)
           ? await uploadAttachmentFromBase64(
               ctx,
               "avatars",
               currentUserData.id,
-              attachment as { base64: string; type: string; name: string }
+              attachment
             )
           : await uploadAttachments(
               ctx,

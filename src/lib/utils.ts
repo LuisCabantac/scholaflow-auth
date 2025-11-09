@@ -5,6 +5,18 @@ export function generateClassCode(): string {
   ).join("");
 }
 
+export function isBase64Attachment(
+  attachment: any
+): attachment is { base64: string; type: string; name: string } {
+  return (
+    attachment &&
+    typeof attachment === "object" &&
+    typeof attachment.base64 === "string" &&
+    typeof attachment.type === "string" &&
+    typeof attachment.name === "string"
+  );
+}
+
 export function extractImagePath(url: string): string {
   const match = url.match(/\/([^\/]+)$/);
   return match ? match[1] : "";

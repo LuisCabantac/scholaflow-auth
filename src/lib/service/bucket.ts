@@ -3,7 +3,7 @@ import type { Context } from "hono";
 
 import { getSupabase } from "../supabase-client.js";
 
-interface Base64Attachment {
+export interface Base64Attachment {
   base64: string;
   type: string;
   name: string;
