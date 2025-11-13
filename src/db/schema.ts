@@ -361,6 +361,7 @@ export const schema = {
   account,
   session,
   verification,
+  passkey,
   roleRequest,
   note,
   classroom,
@@ -371,4 +372,5 @@ export const schema = {
   classwork,
   streamComment,
   streamPrivateComment,
+  notification,
 };
