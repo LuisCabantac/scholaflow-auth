@@ -1,6 +1,7 @@
 import { config } from "dotenv";
 import { expo } from "@better-auth/expo";
 import { openAPI } from "better-auth/plugins";
+import { passkey } from "better-auth/plugins/passkey";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
 import { inferAdditionalFields } from "better-auth/client/plugins";
@@ -245,6 +246,7 @@ export const auth = betterAuth({
       },
     }),
     expo({ disableOriginOverride: true }) as BetterAuthPlugin,
+    passkey(),
     openAPI(),
   ],
   advanced: {
