@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { between, count, desc, eq } from "drizzle-orm";
+import { between, count, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "../db/index.js";
 import { generateClassCode } from "../lib/utils.js";
@@ -29,24 +29,6 @@ export async function getAllClasses(ctx: Context) {
       });
     }
 
-    if (!type) {
-      return ctx.json({
-        message: "Class type parameter is required",
-        error: "Bad Request",
-        statusCode: 400,
-      });
-    }
-
-    const isValidClassType = classroomType.safeParse(type);
-
-    if (isValidClassType.error) {
-      return ctx.json({
-        message: "Invalid class type",
-        error: "Bad Request",
-        statusCode: 400,
-      });
-    }
-
     const { isValidSession } = await validateSession(ctx);
 
     if (!isValidSession) {
@@ -57,87 +39,166 @@ export async function getAllClasses(ctx: Context) {
       });
     }
 
-    if (isValidClassType.data === "created") {
-      const [data, totalResult] = await Promise.all([
-        db
-          .select()
-          .from(classroom)
-          .where(eq(classroom.teacherId, userId))
-          .orderBy(desc(classroom.createdAt))
-          .limit(size)
-          .offset(offset),
-        db
-          .select({ count: count() })
-          .from(classroom)
-          .where(eq(classroom.teacherId, userId)),
-      ]);
+    if (type) {
+      const isValidClassType = classroomType.safeParse(type);
 
-      if (!data.length) {
+      if (isValidClassType.error) {
         return ctx.json({
-          message: "No classes found",
-          data: null,
-          statusCode: 200,
+          message: "Invalid class type",
+          error: "Bad Request",
+          statusCode: 400,
         });
       }
 
-      const total = totalResult[0]?.count || 0;
-      const totalPages = Math.ceil(total / size);
+      if (isValidClassType.data === "created") {
+        const [data, totalResult] = await Promise.all([
+          db
+            .select()
+            .from(classroom)
+            .where(eq(classroom.teacherId, userId))
+            .orderBy(desc(classroom.createdAt))
+            .limit(size)
+            .offset(offset),
+          db
+            .select({ count: count() })
+            .from(classroom)
+            .where(eq(classroom.teacherId, userId)),
+        ]);
 
-      return ctx.json({
-        message: "Classes found",
-        statusCode: 200,
-        data,
-        pagination: {
-          page: pageNumber,
-          pageSize: size,
-          total,
-          totalPages,
-          hasNextPage: pageNumber < totalPages,
-          hasPreviousPage: pageNumber > 1,
-        },
-      });
-    }
+        if (!data.length) {
+          return ctx.json({
+            message: "No classes found",
+            data: null,
+            statusCode: 200,
+          });
+        }
 
-    if (isValidClassType.data === "enrolled") {
-      const [data, totalResult] = await Promise.all([
-        db
-          .select()
-          .from(enrolledClass)
-          .where(eq(enrolledClass.userId, userId))
-          .orderBy(desc(enrolledClass.createdAt))
-          .limit(size)
-          .offset(offset),
-        db
-          .select({ count: count() })
-          .from(classroom)
-          .where(eq(enrolledClass.userId, userId)),
-      ]);
+        const total = totalResult[0]?.count || 0;
+        const totalPages = Math.ceil(total / size);
 
-      if (!data.length) {
         return ctx.json({
-          message: "No classes found",
-          data: null,
+          message: "Classes found",
           statusCode: 200,
+          data,
+          pagination: {
+            page: pageNumber,
+            pageSize: size,
+            total,
+            totalPages,
+            hasNextPage: pageNumber < totalPages,
+            hasPreviousPage: pageNumber > 1,
+          },
         });
       }
 
-      const total = totalResult[0]?.count || 0;
-      const totalPages = Math.ceil(total / size);
+      if (isValidClassType.data === "enrolled") {
+        const [data, totalResult] = await Promise.all([
+          db
+            .select()
+            .from(enrolledClass)
+            .where(eq(enrolledClass.userId, userId))
+            .orderBy(desc(enrolledClass.createdAt))
+            .limit(size)
+            .offset(offset),
+          db
+            .select({ count: count() })
+            .from(classroom)
+            .where(eq(enrolledClass.userId, userId)),
+        ]);
 
-      return ctx.json({
-        message: "Classes found",
-        statusCode: 200,
-        data,
-        pagination: {
-          page: pageNumber,
-          pageSize: size,
-          total,
-          totalPages,
-          hasNextPage: pageNumber < totalPages,
-          hasPreviousPage: pageNumber > 1,
-        },
-      });
+        if (!data.length) {
+          return ctx.json({
+            message: "No classes found",
+            data: null,
+            statusCode: 200,
+          });
+        }
+
+        const total = totalResult[0]?.count || 0;
+        const totalPages = Math.ceil(total / size);
+
+        return ctx.json({
+          message: "Classes found",
+          statusCode: 200,
+          data,
+          pagination: {
+            page: pageNumber,
+            pageSize: size,
+            total,
+            totalPages,
+            hasNextPage: pageNumber < totalPages,
+            hasPreviousPage: pageNumber > 1,
+          },
+        });
+      }
     }
+
+    const createdQuery = db
+      .select({
+        id: classroom.id,
+        name: classroom.name,
+        subject: classroom.subject,
+        section: classroom.section,
+        teacherName: classroom.teacherName,
+        teacherImage: classroom.teacherImage,
+        cardBackground: classroom.cardBackground,
+        illustrationIndex: classroom.illustrationIndex,
+        createdAt: classroom.createdAt,
+        type: sql`'created'`,
+      })
+      .from(classroom)
+      .where(eq(classroom.teacherId, userId));
+
+    const enrolledQuery = db
+      .select({
+        id: enrolledClass.id,
+        name: enrolledClass.name,
+        subject: enrolledClass.subject,
+        section: enrolledClass.section,
+        teacherName: enrolledClass.teacherName,
+        teacherImage: enrolledClass.teacherImage,
+        cardBackground: enrolledClass.cardBackground,
+        illustrationIndex: enrolledClass.illustrationIndex,
+        createdAt: enrolledClass.createdAt,
+        type: sql`'enrolled'`,
+      })
+      .from(enrolledClass)
+      .where(eq(enrolledClass.userId, userId));
+
+    const [data, createdCountResult, enrolledCountResult] = await Promise.all([
+      createdQuery
+        .unionAll(enrolledQuery)
+        .orderBy(desc(sql`createdAt`))
+        .limit(size)
+        .offset(offset),
+      db
+        .select({ count: count() })
+        .from(classroom)
+        .where(eq(classroom.teacherId, userId)),
+      db
+        .select({ count: count() })
+        .from(enrolledClass)
+        .where(eq(enrolledClass.userId, userId)),
+    ]);
+
+    const total =
+      (createdCountResult[0]?.count || 0) +
+      (enrolledCountResult[0]?.count || 0);
+    const totalPages = Math.ceil(total / size);
+
+    return ctx.json({
+      message: "Classes found",
+      statusCode: 200,
+      data,
+      pagination: {
+        page: pageNumber,
+        pageSize: size,
+        total,
+        totalPages,
+        hasNextPage: pageNumber < totalPages,
+        hasPreviousPage: pageNumber > 1,
+      },
+    });
   } catch (error) {
     return ctx.json({
       message:
@@ -497,3 +558,5 @@ export async function updateClassroom(ctx: Context) {
     });
   }
 }
+
+export async function joinClass() {}
