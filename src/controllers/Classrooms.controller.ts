@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { between, desc, eq } from "drizzle-orm";
+import { between, count, desc, eq } from "drizzle-orm";
 
 import { db } from "../db/index.js";
 import { generateClassCode } from "../lib/utils.js";
@@ -15,7 +15,11 @@ import {
 export async function getAllClasses(ctx: Context) {
   try {
     const userId = ctx.req.param("userId");
-    const classType = ctx.req.query("type");
+    const { type, page = "1", pageSize = "10" } = ctx.req.query();
+
+    const pageNumber = parseInt(page as string);
+    const size = parseInt(pageSize as string);
+    const offset = (pageNumber - 1) * size;
 
     if (!userId) {
       return ctx.json({
@@ -25,7 +29,7 @@ export async function getAllClasses(ctx: Context) {
       });
     }
 
-    if (!classType) {
+    if (!type) {
       return ctx.json({
         message: "Class type parameter is required",
         error: "Bad Request",
@@ -33,7 +37,7 @@ export async function getAllClasses(ctx: Context) {
       });
     }
 
-    const isValidClassType = classroomType.safeParse(classType);
+    const isValidClassType = classroomType.safeParse(type);
 
     if (isValidClassType.error) {
       return ctx.json({
@@ -54,11 +58,19 @@ export async function getAllClasses(ctx: Context) {
     }
 
     if (isValidClassType.data === "created") {
-      const data = await db
-        .select()
-        .from(classroom)
-        .where(eq(classroom.teacherId, userId))
-        .orderBy(desc(classroom.createdAt));
+      const [data, totalResult] = await Promise.all([
+        db
+          .select()
+          .from(classroom)
+          .where(eq(classroom.teacherId, userId))
+          .orderBy(desc(classroom.createdAt))
+          .limit(size)
+          .offset(offset),
+        db
+          .select({ count: count() })
+          .from(classroom)
+          .where(eq(classroom.teacherId, userId)),
+      ]);
 
       if (!data.length) {
         return ctx.json({
@@ -68,15 +80,38 @@ export async function getAllClasses(ctx: Context) {
         });
       }
 
-      return ctx.json({ message: "Classes found", data, statusCode: 200 });
+      const total = totalResult[0]?.count || 0;
+      const totalPages = Math.ceil(total / size);
+
+      return ctx.json({
+        message: "Classes found",
+        statusCode: 200,
+        data,
+        pagination: {
+          page: pageNumber,
+          pageSize: size,
+          total,
+          totalPages,
+          hasNextPage: pageNumber < totalPages,
+          hasPreviousPage: pageNumber > 1,
+        },
+      });
     }
 
     if (isValidClassType.data === "enrolled") {
-      const data = await db
-        .select()
-        .from(enrolledClass)
-        .where(eq(enrolledClass.userId, userId))
-        .orderBy(desc(enrolledClass.createdAt));
+      const [data, totalResult] = await Promise.all([
+        db
+          .select()
+          .from(enrolledClass)
+          .where(eq(enrolledClass.userId, userId))
+          .orderBy(desc(enrolledClass.createdAt))
+          .limit(size)
+          .offset(offset),
+        db
+          .select({ count: count() })
+          .from(classroom)
+          .where(eq(enrolledClass.userId, userId)),
+      ]);
 
       if (!data.length) {
         return ctx.json({
@@ -86,7 +121,22 @@ export async function getAllClasses(ctx: Context) {
         });
       }
 
-      return ctx.json({ message: "Classes found", data, statusCode: 200 });
+      const total = totalResult[0]?.count || 0;
+      const totalPages = Math.ceil(total / size);
+
+      return ctx.json({
+        message: "Classes found",
+        statusCode: 200,
+        data,
+        pagination: {
+          page: pageNumber,
+          pageSize: size,
+          total,
+          totalPages,
+          hasNextPage: pageNumber < totalPages,
+          hasPreviousPage: pageNumber > 1,
+        },
+      });
     }
   } catch (error) {
     return ctx.json({
