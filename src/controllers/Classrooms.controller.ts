@@ -168,7 +168,7 @@ export async function getAllClasses(ctx: Context) {
     const [data, createdCountResult, enrolledCountResult] = await Promise.all([
       createdQuery
         .unionAll(enrolledQuery)
-        .orderBy(desc(sql`createdAt`))
+        .orderBy(desc(sql`"created_at"`))
         .limit(size)
         .offset(offset),
       db
