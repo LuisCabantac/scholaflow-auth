@@ -15,8 +15,9 @@ import {
 export async function getAllClasses(ctx: Context) {
   try {
     const userId = ctx.req.param("userId");
-    const { type, page = "1", pageSize = "10" } = ctx.req.query();
+    const { type, page = "1", pageSize = "10", paginated } = ctx.req.query();
 
+    const isPaginated = paginated === undefined || paginated === "true";
     const pageNumber = parseInt(page as string);
     const size = parseInt(pageSize as string);
     const offset = (pageNumber - 1) * size;
@@ -51,19 +52,52 @@ export async function getAllClasses(ctx: Context) {
       }
 
       if (isValidClassType.data === "created") {
-        const [data, totalResult] = await Promise.all([
-          db
-            .select()
-            .from(classroom)
-            .where(eq(classroom.teacherId, userId))
-            .orderBy(desc(classroom.createdAt))
-            .limit(size)
-            .offset(offset),
-          db
-            .select({ count: count() })
-            .from(classroom)
-            .where(eq(classroom.teacherId, userId)),
-        ]);
+        if (isPaginated) {
+          const [data, totalResult] = await Promise.all([
+            db
+              .select()
+              .from(classroom)
+              .where(eq(classroom.teacherId, userId))
+              .orderBy(desc(classroom.createdAt))
+              .limit(size)
+              .offset(offset),
+            db
+              .select({ count: count() })
+              .from(classroom)
+              .where(eq(classroom.teacherId, userId)),
+          ]);
+
+          if (!data.length) {
+            return ctx.json({
+              message: "No classes found",
+              data: null,
+              statusCode: 200,
+            });
+          }
+
+          const total = totalResult[0]?.count || 0;
+          const totalPages = Math.ceil(total / size);
+
+          return ctx.json({
+            message: "Classes found",
+            statusCode: 200,
+            data,
+            pagination: {
+              page: pageNumber,
+              pageSize: size,
+              total,
+              totalPages,
+              hasNextPage: pageNumber < totalPages,
+              hasPreviousPage: pageNumber > 1,
+            },
+          });
+        }
+
+        const data = await db
+          .select()
+          .from(classroom)
+          .where(eq(classroom.teacherId, userId))
+          .orderBy(desc(classroom.createdAt));
 
         if (!data.length) {
           return ctx.json({
@@ -73,38 +107,60 @@ export async function getAllClasses(ctx: Context) {
           });
         }
 
-        const total = totalResult[0]?.count || 0;
-        const totalPages = Math.ceil(total / size);
-
         return ctx.json({
           message: "Classes found",
           statusCode: 200,
           data,
-          pagination: {
-            page: pageNumber,
-            pageSize: size,
-            total,
-            totalPages,
-            hasNextPage: pageNumber < totalPages,
-            hasPreviousPage: pageNumber > 1,
-          },
         });
       }
 
       if (isValidClassType.data === "enrolled") {
-        const [data, totalResult] = await Promise.all([
-          db
-            .select()
-            .from(enrolledClass)
-            .where(eq(enrolledClass.userId, userId))
-            .orderBy(desc(enrolledClass.createdAt))
-            .limit(size)
-            .offset(offset),
-          db
-            .select({ count: count() })
-            .from(classroom)
-            .where(eq(enrolledClass.userId, userId)),
-        ]);
+        if (isPaginated) {
+          const [data, totalResult] = await Promise.all([
+            db
+              .select()
+              .from(enrolledClass)
+              .where(eq(enrolledClass.userId, userId))
+              .orderBy(desc(enrolledClass.createdAt))
+              .limit(size)
+              .offset(offset),
+            db
+              .select({ count: count() })
+              .from(classroom)
+              .where(eq(enrolledClass.userId, userId)),
+          ]);
+
+          if (!data.length) {
+            return ctx.json({
+              message: "No classes found",
+              data: null,
+              statusCode: 200,
+            });
+          }
+
+          const total = totalResult[0]?.count || 0;
+          const totalPages = Math.ceil(total / size);
+
+          return ctx.json({
+            message: "Classes found",
+            statusCode: 200,
+            data,
+            pagination: {
+              page: pageNumber,
+              pageSize: size,
+              total,
+              totalPages,
+              hasNextPage: pageNumber < totalPages,
+              hasPreviousPage: pageNumber > 1,
+            },
+          });
+        }
+
+        const data = await db
+          .select()
+          .from(enrolledClass)
+          .where(eq(enrolledClass.userId, userId))
+          .orderBy(desc(enrolledClass.createdAt));
 
         if (!data.length) {
           return ctx.json({
@@ -114,21 +170,10 @@ export async function getAllClasses(ctx: Context) {
           });
         }
 
-        const total = totalResult[0]?.count || 0;
-        const totalPages = Math.ceil(total / size);
-
         return ctx.json({
           message: "Classes found",
           statusCode: 200,
           data,
-          pagination: {
-            page: pageNumber,
-            pageSize: size,
-            total,
-            totalPages,
-            hasNextPage: pageNumber < totalPages,
-            hasPreviousPage: pageNumber > 1,
-          },
         });
       }
     }
