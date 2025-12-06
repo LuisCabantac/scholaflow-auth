@@ -126,7 +126,7 @@ export async function getAllClasses(ctx: Context) {
               .offset(offset),
             db
               .select({ count: count() })
-              .from(classroom)
+              .from(enrolledClass)
               .where(eq(enrolledClass.userId, userId)),
           ]);
 
