@@ -340,6 +340,14 @@ export async function createClassroom(ctx: Context) {
       teacherImage,
     } = body;
 
+    if (!body || Object.keys(body).length === 0) {
+      return ctx.json({
+        message: "Request body is required",
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
     const newClass = {
       name,
       subject,
@@ -350,15 +358,8 @@ export async function createClassroom(ctx: Context) {
       teacherId,
       teacherName,
       teacherImage,
+      room: null,
     };
-
-    if (!body || Object.keys(body).length === 0) {
-      return ctx.json({
-        message: "Request body is required",
-        error: "Bad Request",
-        statusCode: 400,
-      });
-    }
 
     const isValidClassroomSchema = createClassroomSchema.safeParse(newClass);
 
