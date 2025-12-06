@@ -181,6 +181,7 @@ export async function getAllClasses(ctx: Context) {
     const createdQuery = db
       .select({
         id: classroom.id,
+        classId: classroom.id,
         name: classroom.name,
         subject: classroom.subject,
         section: classroom.section,
@@ -197,6 +198,7 @@ export async function getAllClasses(ctx: Context) {
     const enrolledQuery = db
       .select({
         id: enrolledClass.id,
+        classId: enrolledClass.classId,
         name: enrolledClass.name,
         subject: enrolledClass.subject,
         section: enrolledClass.section,
