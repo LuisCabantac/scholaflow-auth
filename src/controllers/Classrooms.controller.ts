@@ -790,17 +790,17 @@ export async function joinClassroom(ctx: Context) {
     }
 
     const newEnrolledClass = {
-      classId: classroom.id,
-      userId: userData.id,
-      userName: userData.name,
-      userImage: userData.image,
-      name: classroom.name,
-      subject: classroom.subject,
-      section: classroom.section,
-      teacherName: classroom.teacherName,
-      teacherImage: classroom.teacherImage,
-      cardBackground: classroom.cardBackground,
-      illustrationIndex: classroom.illustrationIndex,
+      classId: String(classroomData.id),
+      userId: String(userData.id),
+      userName: String(userData.name),
+      userImage: String(userData.image),
+      name: String(classroomData.name),
+      subject: classroomData.subject ? String(classroomData.subject) : null,
+      section: String(classroomData.section),
+      teacherName: String(classroomData.teacherName),
+      teacherImage: String(classroomData.teacherImage),
+      cardBackground: String(classroomData.cardBackground),
+      illustrationIndex: Number(classroomData.illustrationIndex),
     };
 
     const result = createEnrolledClassSchema.safeParse(newEnrolledClass);
@@ -896,17 +896,17 @@ export async function joinClassroomByClassCode(ctx: Context) {
     }
 
     const newEnrolledClass = {
-      classId: classroom.id,
+      classId: classroomData.id,
       userId: userData.id,
       userName: userData.name,
       userImage: userData.image,
-      name: classroom.name,
-      subject: classroom.subject,
-      section: classroom.section,
-      teacherName: classroom.teacherName,
-      teacherImage: classroom.teacherImage,
-      cardBackground: classroom.cardBackground,
-      illustrationIndex: classroom.illustrationIndex,
+      name: classroomData.name,
+      subject: classroomData.subject,
+      section: classroomData.section,
+      teacherName: classroomData.teacherName,
+      teacherImage: classroomData.teacherImage,
+      cardBackground: classroomData.cardBackground,
+      illustrationIndex: classroomData.illustrationIndex,
     };
 
     const result = createEnrolledClassSchema.safeParse(newEnrolledClass);
