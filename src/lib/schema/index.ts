@@ -1,4 +1,5 @@
-import { z } from "zod/v4";
+import { z } from "zod";
+import type { Base64Attachment } from "../service/bucket.js";
 
 export const userSchema = z.object({
   id: z.string(),
@@ -353,7 +354,18 @@ export const noteSchema = z.object({
 
 export type Note = z.infer<typeof noteSchema>;
 
-export const createNoteSchema = noteSchema.omit({ id: true, createdAt: true });
+export const createNoteSchema = z.object({
+  userId: z.string(),
+  title: z.nullable(z.string()),
+  content: z.nullable(z.string()),
+  attachments: z.array(z.string()),
+  isPinned: z.boolean(),
+  updatedAt: z.nullable(z.date()),
+});
+
+export type CreateNote = z.infer<typeof createNoteSchema>;
+
+export type NoteAttachmentInput = string | File | Base64Attachment;
 
 export const editNoteSchema = noteSchema.omit({
   id: true,
