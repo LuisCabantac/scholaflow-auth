@@ -8,9 +8,16 @@ import { validateId } from "../lib/validation/index.js";
 import { classroom, enrolledClass } from "../db/schema.js";
 import { getAllClassTopicIdsByClassId } from "../lib/service/topic.js";
 import { deleteTopicByTopicIdAndUserId } from "../lib/actions/topic.js";
-import { classroomType, createClassroomSchema } from "../lib/schema/index.js";
+import {
+  classroomType,
+  createClassroomSchema,
+  createEnrolledClassSchema,
+} from "../lib/schema/index.js";
 import { deleteAllClassworkByClassAndUserId } from "../lib/actions/classwork.js";
-import { deleteAllNotificationsByResourceId } from "../lib/actions/notification.js";
+import {
+  deleteAllNotificationsByResourceId,
+  sendNotification,
+} from "../lib/actions/notification.js";
 import {
   deleteMultipleEnrolledClass,
   updateEnrolledClass,
@@ -729,4 +736,108 @@ export async function deleteClassroom(ctx: Context) {
   }
 }
 
-export async function joinClass() {}
+export async function joinClassroom(ctx: Context) {
+  try {
+    const { classId } = ctx.req.param();
+
+    if (!classId) {
+      return ctx.json({
+        message: "Class ID parameter is required",
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const { isValidSession, userData } = await validateSession(ctx);
+
+    if (!isValidSession) {
+      return ctx.json({
+        message: "Invalid or expired token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    if (!userData) {
+      return ctx.json({
+        message: "User not found in session",
+        error: "Forbidden",
+        statusCode: 403,
+      });
+    }
+
+    const classroomData = await getClassroomByClassId(classId);
+
+    if (!classroomData) {
+      return ctx.json({
+        message: "Classroom not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    const newEnrolledClass = {
+      classId: classroom.id,
+      userId: userData.id,
+      userName: userData.name,
+      userImage: userData.image,
+      name: classroom.name,
+      subject: classroom.subject,
+      section: classroom.section,
+      teacherName: classroom.teacherName,
+      teacherImage: classroom.teacherImage,
+      cardBackground: classroom.cardBackground,
+      illustrationIndex: classroom.illustrationIndex,
+    };
+
+    const result = createEnrolledClassSchema.safeParse(newEnrolledClass);
+
+    if (result.error) {
+      return ctx.json({
+        message: result.error.issues.map((issue) => issue.message).join(", "),
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const [data] = await db
+      .insert(enrolledClass)
+      .values(result.data)
+      .returning();
+
+    if (!data) {
+      return ctx.json({
+        message:
+          "Failed to join the classroom. Database operation unsuccessful",
+        error: "Internal Server Error",
+        statusCode: 500,
+      });
+    }
+
+    await sendNotification(
+      "join",
+      userData.id,
+      userData.name,
+      userData.image,
+      classroomData.teacherId,
+      data.id,
+      data.name,
+      `/classroom/class/${data.classId}`
+    );
+
+    return ctx.json({
+      message: "Successfully joined the classroom",
+      data,
+      statusCode: 201,
+    });
+  } catch (error) {
+    return ctx.json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to join the classroom. Please try again",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
