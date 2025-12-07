@@ -166,7 +166,7 @@ export const createClassroomSchema = classroomSchema.omit({
 
 export const enrolledClassSchema = z.object({
   id: z.uuid(),
-  classId: z.uuid(),
+  classId: z.string(),
   userId: z.string(),
   userName: z.string(),
   userImage: z.string(),
