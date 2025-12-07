@@ -496,7 +496,7 @@ export async function updateClassroom(ctx: Context) {
       name,
       subject,
       section,
-      classDescription,
+      description,
       cardBackground,
       allowStudentsToComment,
       allowStudentsToPost,
@@ -507,7 +507,7 @@ export async function updateClassroom(ctx: Context) {
       name,
       subject,
       section,
-      classDescription,
+      description,
       cardBackground,
       allowStudentsToComment,
       allowStudentsToPost,
@@ -520,7 +520,7 @@ export async function updateClassroom(ctx: Context) {
       currentClassData.subject !== newClass.subject ||
       currentClassData.teacherName !== userData.name ||
       currentClassData.teacherImage !== userData.image ||
-      currentClassData.description !== newClass.classDescription ||
+      currentClassData.description !== newClass.description ||
       currentClassData.section !== newClass.section ||
       currentClassData.cardBackground !== newClass.cardBackground ||
       currentClassData.allowUsersToComment !==
@@ -531,7 +531,7 @@ export async function updateClassroom(ctx: Context) {
         name: newClass.name,
         subject: newClass.subject,
         section: newClass.section ?? "",
-        description: newClass.classDescription ?? "",
+        description: newClass.description ?? "",
         teacherName: userData.name,
         teacherImage: userData.image as string,
         allowUsersToComment: newClass.allowStudentsToComment,
