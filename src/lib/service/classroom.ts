@@ -26,6 +26,17 @@ export async function getClassroomByClassId(
   return data || null;
 }
 
+export async function getClassroomByClassCode(
+  classCode: string
+): Promise<Classroom | null> {
+  const [data] = await db
+    .select()
+    .from(classroom)
+    .where(eq(classroom.code, classCode));
+
+  return data || null;
+}
+
 export async function getEnrolledClassByClassAndUserId(
   userId: string,
   classId: string

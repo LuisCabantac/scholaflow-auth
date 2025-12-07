@@ -6,6 +6,7 @@ import {
   getClassByClassId,
   updateClassroom,
   joinClassroom,
+  joinClassroomByClassCode,
 } from "../controllers/Classrooms.controller.js";
 
 const app = new Hono();
@@ -18,6 +19,8 @@ app.patch("/:classId", (c) => updateClassroom(c));
 
 app.delete("/:classId", (c) => deleteClassroom(c));
 
-app.post("/:classId/join", (c) => joinClassroom(c));
+app.post("/join/:classId", (c) => joinClassroom(c));
+
+app.post("/join/code/:classCode", (c) => joinClassroomByClassCode(c));
 
 export default app;
