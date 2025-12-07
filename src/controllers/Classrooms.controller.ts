@@ -1,15 +1,25 @@
 import type { Context } from "hono";
-import { between, count, desc, eq, sql } from "drizzle-orm";
+import { and, between, count, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "../db/index.js";
 import { generateClassCode } from "../lib/utils.js";
 import { validateSession } from "../lib/auth/index.js";
 import { validateId } from "../lib/validation/index.js";
 import { classroom, enrolledClass } from "../db/schema.js";
+import { getAllClassTopicIdsByClassId } from "../lib/service/topic.js";
+import { deleteTopicByTopicIdAndUserId } from "../lib/actions/topic.js";
 import { classroomType, createClassroomSchema } from "../lib/schema/index.js";
+import { deleteAllClassworkByClassAndUserId } from "../lib/actions/classwork.js";
+import { deleteAllNotificationsByResourceId } from "../lib/actions/notification.js";
+import {
+  deleteMultipleEnrolledClass,
+  updateEnrolledClass,
+} from "../lib/actions/classroom.js";
 import {
   getAllEnrolledClassesByClassId,
-  updateEnrolledClass,
+  getAllEnrolledClassesIdByClassId,
+  getClassroomByClassId,
+  getEnrolledClassByClassAndUserId,
 } from "../lib/service/classroom.js";
 
 export async function getAllClasses(ctx: Context) {
@@ -600,6 +610,119 @@ export async function updateClassroom(ctx: Context) {
         error instanceof Error
           ? error.message
           : "Failed to update classroom. Please try again",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
+export async function deleteClassroom(ctx: Context) {
+  try {
+    const { classId } = ctx.req.param();
+
+    if (!classId) {
+      return ctx.json({
+        message: "Class ID parameter is required",
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const { isValidSession, userId } = await validateSession(ctx);
+
+    if (!isValidSession) {
+      return ctx.json({
+        message: "Invalid or expired token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    if (!userId) {
+      return ctx.json({
+        message: "User ID not found in session",
+        error: "Forbidden",
+        statusCode: 403,
+      });
+    }
+
+    const classroomData = await getClassroomByClassId(classId);
+
+    if (!classroomData) {
+      return ctx.json({
+        message: "Classroom not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    if (classroomData.teacherId !== userId) {
+      const currentUserEnrolledClass = await getEnrolledClassByClassAndUserId(
+        userId,
+        classId
+      );
+
+      if (!currentUserEnrolledClass) {
+        return ctx.json({
+          message: "You are not enrolled in this classroom",
+          error: "Forbidden",
+          statusCode: 403,
+        });
+      }
+
+      await deleteAllClassworkByClassAndUserId(
+        currentUserEnrolledClass.classId,
+        currentUserEnrolledClass.userId,
+        ctx
+      );
+
+      const [data] = await db
+        .delete(enrolledClass)
+        .where(
+          and(
+            eq(enrolledClass.classId, classId),
+            eq(enrolledClass.userId, userId)
+          )
+        )
+        .returning();
+
+      if (data) {
+        await deleteAllNotificationsByResourceId(data.id);
+      }
+    }
+
+    const classroomIds = await getAllEnrolledClassesIdByClassId(classId);
+
+    if (classroomIds?.length) {
+      await deleteMultipleEnrolledClass(classroomIds);
+    }
+
+    const topicIds = await getAllClassTopicIdsByClassId(classId);
+
+    if (topicIds?.length) {
+      for (const topicId of topicIds) {
+        await deleteTopicByTopicIdAndUserId(topicId, userId);
+      }
+    }
+
+    const [data] = await db
+      .delete(classroom)
+      .where(and(eq(classroom.id, classId), eq(classroom.teacherId, userId)))
+      .returning();
+
+    if (!data) {
+      return ctx.json({
+        message: "Failed to delete classroom",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+  } catch (error) {
+    return ctx.json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to delete classroom. Please try again",
       error: "Internal Server Error",
       statusCode: 500,
     });
