@@ -15,24 +15,6 @@ export async function getAllEnrolledClassesByClassId(
   return !data?.length ? null : data;
 }
 
-export async function updateEnrolledClass(
-  enrolledClassId: string,
-  updatedClass: {
-    teacherName: string;
-    teacherImage: string;
-    name: string;
-    section: string;
-    subject: string | null;
-    cardBackground: string;
-  }
-) {
-  await db
-    .update(enrolledClass)
-    .set(updatedClass)
-    .where(eq(enrolledClass.id, enrolledClassId))
-    .returning();
-}
-
 export async function getClassroomByClassId(
   classId: string
 ): Promise<Classroom | null> {
@@ -79,4 +61,15 @@ export async function getAllEnrolledClassesByUserId(
     .orderBy(desc(enrolledClass.createdAt));
 
   return !data?.length ? null : data;
+}
+
+export async function getEnrolledClassByEnrolledClassId(
+  enrolledClassId: string
+): Promise<EnrolledClass | null> {
+  const [data] = await db
+    .select()
+    .from(enrolledClass)
+    .where(eq(enrolledClass.id, enrolledClassId));
+
+  return data || null;
 }
