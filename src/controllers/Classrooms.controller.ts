@@ -498,8 +498,8 @@ export async function updateClassroom(ctx: Context) {
       section,
       description,
       cardBackground,
-      allowStudentsToComment,
-      allowStudentsToPost,
+      allowUsersToComment,
+      allowUsersToPost,
       updateClassCode,
     } = body;
 
@@ -509,8 +509,8 @@ export async function updateClassroom(ctx: Context) {
       section,
       description,
       cardBackground,
-      allowStudentsToComment,
-      allowStudentsToPost,
+      allowUsersToComment,
+      allowUsersToPost,
       updateClassCode,
     };
 
@@ -523,9 +523,8 @@ export async function updateClassroom(ctx: Context) {
       currentClassData.description !== newClass.description ||
       currentClassData.section !== newClass.section ||
       currentClassData.cardBackground !== newClass.cardBackground ||
-      currentClassData.allowUsersToComment !==
-        newClass.allowStudentsToComment ||
-      currentClassData.allowUsersToPost !== newClass.allowStudentsToPost
+      currentClassData.allowUsersToComment !== newClass.allowUsersToComment ||
+      currentClassData.allowUsersToPost !== newClass.allowUsersToPost
     ) {
       const updatedClassData = {
         name: newClass.name,
@@ -534,8 +533,8 @@ export async function updateClassroom(ctx: Context) {
         description: newClass.description ?? "",
         teacherName: userData.name,
         teacherImage: userData.image as string,
-        allowUsersToComment: newClass.allowStudentsToComment,
-        allowUsersToPost: newClass.allowStudentsToPost,
+        allowUsersToComment: newClass.allowUsersToComment,
+        allowUsersToPost: newClass.allowUsersToPost,
         cardBackground: newClass.cardBackground,
         code: updateClassCode ? generateClassCode() : currentClassData.code,
       };
