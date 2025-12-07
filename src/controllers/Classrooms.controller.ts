@@ -698,7 +698,7 @@ export async function deleteClassroom(ctx: Context) {
       }
 
       return ctx.json({
-        message: "Classroom deleted successfully",
+        message: "You've been successfully unenrolled to this class",
         data: null,
         statusCode: 200,
       });
@@ -732,7 +732,7 @@ export async function deleteClassroom(ctx: Context) {
     }
 
     return ctx.json({
-      message: "Classroom deleted successfully",
+      message: "Classroom has been deleted successfully",
       data: null,
       statusCode: 200,
     });
