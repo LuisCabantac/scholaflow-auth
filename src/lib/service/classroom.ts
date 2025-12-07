@@ -1,17 +1,12 @@
-import { eq } from "drizzle-orm";
-import { validate as validateUUID } from "uuid";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "../../db/index.js";
-import { enrolledClass } from "../../db/schema.js";
-import type { EnrolledClass } from "../schema/index.js";
+import { classroom, enrolledClass } from "../../db/schema.js";
+import type { Classroom, EnrolledClass } from "../schema/index.js";
 
 export async function getAllEnrolledClassesByClassId(
   classId: string
 ): Promise<EnrolledClass[] | null> {
-  if (!classId || !validateUUID(classId)) {
-    return null;
-  }
-
   const data = await db
     .select()
     .from(enrolledClass)
@@ -31,9 +26,57 @@ export async function updateEnrolledClass(
     cardBackground: string;
   }
 ) {
-  const [data] = await db
+  await db
     .update(enrolledClass)
     .set(updatedClass)
     .where(eq(enrolledClass.id, enrolledClassId))
     .returning();
+}
+
+export async function getClassroomByClassId(
+  classId: string
+): Promise<Classroom | null> {
+  const [data] = await db
+    .select()
+    .from(classroom)
+    .where(eq(classroom.id, classId));
+
+  return data || null;
+}
+
+export async function getEnrolledClassByClassAndUserId(
+  userId: string,
+  classId: string
+): Promise<EnrolledClass | null> {
+  const [data] = await db
+    .select()
+    .from(enrolledClass)
+    .where(
+      and(eq(enrolledClass.classId, classId), eq(enrolledClass.userId, userId))
+    );
+
+  return data || null;
+}
+
+export async function getAllEnrolledClassesIdByClassId(
+  classId: string
+): Promise<string[] | null> {
+  const data = await db
+    .select({ id: enrolledClass.id })
+    .from(enrolledClass)
+    .where(eq(enrolledClass.classId, classId));
+
+  return !data?.length ? null : data.map((row) => row.id);
+}
+
+export async function getAllEnrolledClassesByUserId(
+  userId: string
+): Promise<EnrolledClass[] | null> {
+  const data = await db
+    .select()
+    .from(enrolledClass)
+    .where(eq(enrolledClass.userId, userId))
+    .orderBy(desc(enrolledClass.createdAt));
+
+  return !data?.length ? null : data;
 }
