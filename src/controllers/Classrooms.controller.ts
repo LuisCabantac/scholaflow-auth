@@ -867,7 +867,7 @@ export async function joinClassroomByClassCode(ctx: Context) {
       });
     }
 
-    const { isValidSession, userData } = await validateSession(ctx);
+    const { isValidSession, userData, userId } = await validateSession(ctx);
 
     if (!isValidSession) {
       return ctx.json({
@@ -892,6 +892,19 @@ export async function joinClassroomByClassCode(ctx: Context) {
         message: "Classroom not found",
         error: "Not Found",
         statusCode: 404,
+      });
+    }
+
+    const isCurrentlyEnrolled = await getEnrolledClassByClassAndUserId(
+      userId,
+      classroomData.id
+    );
+
+    if (isCurrentlyEnrolled) {
+      return ctx.json({
+        message: "You are already enrolled in this classroom",
+        error: "Conflict",
+        statusCode: 409,
       });
     }
 
