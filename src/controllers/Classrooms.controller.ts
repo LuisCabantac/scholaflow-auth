@@ -696,6 +696,12 @@ export async function deleteClassroom(ctx: Context) {
       if (data) {
         await deleteAllNotificationsByResourceId(data.id);
       }
+
+      return ctx.json({
+        message: "Classroom deleted successfully",
+        data: null,
+        statusCode: 200,
+      });
     }
 
     const classroomIds = await getAllEnrolledClassesIdByClassId(classId);
@@ -724,6 +730,12 @@ export async function deleteClassroom(ctx: Context) {
         statusCode: 404,
       });
     }
+
+    return ctx.json({
+      message: "Classroom deleted successfully",
+      data: null,
+      statusCode: 200,
+    });
   } catch (error) {
     return ctx.json({
       message:
