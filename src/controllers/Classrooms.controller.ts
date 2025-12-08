@@ -895,6 +895,14 @@ export async function joinClassroomByClassCode(ctx: Context) {
       });
     }
 
+    if (classroomData.teacherId === userId) {
+      return ctx.json({
+        message: "You cannot join your own classroom",
+        error: "Forbidden",
+        statusCode: 403,
+      });
+    }
+
     const isCurrentlyEnrolled = await getEnrolledClassByClassAndUserId(
       userId,
       classroomData.id
