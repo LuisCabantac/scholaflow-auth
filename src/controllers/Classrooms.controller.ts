@@ -12,8 +12,12 @@ import {
   classroomType,
   createClassroomSchema,
   createEnrolledClassSchema,
+  addCommentSchema,
 } from "../lib/schema/index.js";
-import { deleteAllClassworkByClassAndUserId } from "../lib/actions/classwork.js";
+import {
+  deleteAllClassworkByClassAndUserId,
+  deleteAllClassworksByClassId,
+} from "../lib/actions/classwork.js";
 import {
   deleteAllNotificationsByResourceId,
   sendNotification,
@@ -22,6 +26,12 @@ import {
   deleteMultipleEnrolledClass,
   updateEnrolledClass,
 } from "../lib/actions/classroom.js";
+import { deleteAllStreamsByClassId } from "../lib/actions/stream.js";
+import { deleteAllMessagesByClassIdOnly } from "../lib/actions/message.js";
+import {
+  deleteAllCommentsByClassId,
+  addCommentToStream,
+} from "../lib/actions/comment.js";
 import {
   getAllEnrolledClassesByClassId,
   getAllEnrolledClassesIdByClassId,
@@ -719,6 +729,14 @@ export async function deleteClassroom(ctx: Context) {
       }
     }
 
+    await deleteAllCommentsByClassId(classId, ctx);
+
+    await deleteAllClassworksByClassId(classId, ctx);
+
+    await deleteAllStreamsByClassId(classId, ctx);
+
+    await deleteAllMessagesByClassIdOnly(classId, ctx);
+
     const [data] = await db
       .delete(classroom)
       .where(and(eq(classroom.id, classId), eq(classroom.teacherId, userId)))
@@ -975,6 +993,43 @@ export async function joinClassroomByClassCode(ctx: Context) {
         error instanceof Error
           ? error.message
           : "Failed to join the classroom. Please try again",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+export async function addCommentToStreamController(ctx: Context) {
+  try {
+    const { isValidSession, userId, userData } = await validateSession(ctx);
+
+    if (!isValidSession || !userId || !userData) {
+      return ctx.json({
+        message: "Invalid or expired token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const body = await ctx.req.json();
+    const validatedBody = addCommentSchema.parse(body);
+
+    const result = await addCommentToStream(
+      validatedBody,
+      userId,
+      userData.name,
+      userData.image,
+      ctx
+    );
+
+    return ctx.json({
+      message: "Comment added successfully",
+      statusCode: 200,
+      data: result,
+      error: null,
+    });
+  } catch (error) {
+    return ctx.json({
+      message: error instanceof Error ? error.message : "Failed to add comment",
       error: "Internal Server Error",
       statusCode: 500,
     });
