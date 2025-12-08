@@ -31,6 +31,29 @@ export async function deleteAllMessagesByClassId(
   await db.delete(chat).where(eq(chat.classId, classId)).returning();
 }
 
+export async function deleteAllMessagesByClassIdOnly(
+  classId: string,
+  ctx: Context
+) {
+  const messages = await db
+    .select()
+    .from(chat)
+    .where(eq(chat.classId, classId));
+
+  if (!messages?.length) return;
+
+  const attachments = messages.map((chat) => chat.attachments).flat();
+
+  if (attachments.length) {
+    const chatAttachmentsFilePath: string[] = attachments.map((file) =>
+      extractMessagesFilePath(file)
+    );
+    await deleteFilesFromBucket(ctx, "messages", chatAttachmentsFilePath);
+  }
+
+  await db.delete(chat).where(eq(chat.classId, classId)).returning();
+}
+
 export async function deleteAllMessagesByUserId(userId: string, ctx: Context) {
   const messages = await getAllMessagesByUserId(userId);
 
