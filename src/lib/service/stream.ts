@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike, ne, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.js";
 import { stream } from "../../db/schema.js";
@@ -99,7 +99,7 @@ export async function getStreamsByClassIdPaginated(
       eq(stream.userId, userId),
       eq(stream.userId, teacherId),
       and(
-        sql`${stream.announceTo} @> ${sql.raw(`ARRAY['${userId}']`)}`,
+        sql`${userId} = ANY(${stream.announceTo})`,
         eq(stream.announceToAll, false)
       )
     ),
