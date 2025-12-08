@@ -272,12 +272,30 @@ export const streamSchema = z.object({
 
 export type Stream = z.infer<typeof streamSchema>;
 
-export const createStreamSchema = streamSchema.omit({
+export const streamInsertSchema = streamSchema.omit({
   id: true,
   isPinned: true,
   createdAt: true,
   updatedAt: true,
 });
+
+export const createStreamSchema = z.object({
+  classroomId: z.string().min(1),
+  streamType: z.string().min(1),
+  title: z.string().optional(),
+  caption: z.string().optional(),
+  attachments: z.array(z.instanceof(File)).optional(),
+  links: z.array(z.string()).optional(),
+  announceTo: z.array(z.string()).optional(),
+  topicId: z.string().optional(),
+  dueDate: z.string().optional(),
+  scheduledAt: z.string().optional(),
+  acceptingSubmissions: z.boolean().optional(),
+  closeSubmissionsAfterDueDate: z.boolean().optional(),
+  totalPoints: z.number().optional(),
+});
+
+export type CreateStream = z.infer<typeof createStreamSchema>;
 
 export const editStreamSchema = streamSchema.omit({
   id: true,
@@ -290,6 +308,33 @@ export const editStreamSchema = streamSchema.omit({
   isPinned: true,
   createdAt: true,
 });
+
+export const updateStreamSchema = z.object({
+  streamId: z.string().min(1),
+  classroomId: z.string().min(1),
+  streamType: z.string().min(1),
+  title: z.string().optional(),
+  caption: z.string().optional(),
+  attachments: z.array(z.instanceof(File)).optional(),
+  links: z.array(z.string()).optional(),
+  announceTo: z.array(z.string()).optional(),
+  topicId: z.string().optional(),
+  dueDate: z.string().optional(),
+  scheduledAt: z.string().optional(),
+  acceptingSubmissions: z.boolean().optional(),
+  closeSubmissionsAfterDueDate: z.boolean().optional(),
+  totalPoints: z.number().optional(),
+  curUrlLinks: z.array(z.string()).optional(),
+  curAttachments: z.array(z.string()).optional(),
+});
+
+export type UpdateStream = z.infer<typeof updateStreamSchema>;
+
+export const deleteStreamSchema = z.object({
+  streamId: z.string().min(1),
+});
+
+export type DeleteStream = z.infer<typeof deleteStreamSchema>;
 
 export const streamCommentSchema = z.object({
   id: z.uuid(),
@@ -404,3 +449,155 @@ export const fullNameSchema = z
   });
 
 export const emailSchema = z.email();
+
+export const createClassSchema = z.object({
+  name: z.string().min(1),
+  subject: z.string().optional(),
+  section: z.string().min(1),
+  room: z.string().optional(),
+  cardBackground: z.string().min(1),
+  illustrationIndex: z.number().int().min(0).max(4),
+  code: z.string().min(1),
+  teacherId: z.string().min(1),
+  teacherName: z.string().min(1),
+  teacherImage: z.string().min(1),
+});
+
+export type CreateClass = z.infer<typeof createClassSchema>;
+
+export const updateClassSchema = z.object({
+  className: z.string().min(1),
+  subject: z.string().optional(),
+  section: z.string().optional(),
+  classDescription: z.string().optional(),
+  allowStudentsToComment: z.boolean(),
+  color: z.string().min(1),
+  allowStudentsToPost: z.boolean(),
+  updateClassCode: z.boolean().optional(),
+});
+
+export type UpdateClass = z.infer<typeof updateClassSchema>;
+
+export const joinClassSchema = z.object({
+  classId: z.string().min(1),
+});
+
+export type JoinClass = z.infer<typeof joinClassSchema>;
+
+export const submitClassworkSchema = z.object({
+  classworkId: z.string().min(1),
+  userId: z.string().min(1),
+  submission: z.string().min(1),
+  attachments: z.array(z.instanceof(File)).optional(),
+});
+
+export type SubmitClasswork = z.infer<typeof submitClassworkSchema>;
+
+export const updateClassworkSchema = z.object({
+  classworkId: z.string().min(1),
+  classroomId: z.string().min(1),
+  streamId: z.string().min(1),
+  attachments: z.array(z.instanceof(File)).optional(),
+  links: z.array(z.string()).optional(),
+  curUrlLinks: z.array(z.string()).optional(),
+  curAttachments: z.array(z.string()).optional(),
+  isTurned: z.boolean().optional(),
+});
+
+export type UpdateClasswork = z.infer<typeof updateClassworkSchema>;
+
+export const unsubmitClassworkSchema = z.object({
+  classworkId: z.string().min(1),
+  classroomId: z.string().min(1),
+  streamId: z.string().min(1),
+});
+
+export type UnsubmitClasswork = z.infer<typeof unsubmitClassworkSchema>;
+
+export const addGradeClassworkSchema = z.object({
+  userId: z.string().min(1),
+  streamId: z.string().min(1),
+  classroomId: z.string().min(1),
+  classworkId: z.string().min(1),
+  userPoints: z.number().optional(),
+});
+
+export type AddGradeClasswork = z.infer<typeof addGradeClassworkSchema>;
+
+export const addCommentSchema = z.object({
+  classroomId: z.string().min(1),
+  streamId: z.string().min(1),
+  comment: z.string().min(1),
+  attachment: z.instanceof(File).optional(),
+});
+
+export type AddComment = z.infer<typeof addCommentSchema>;
+
+export const addPrivateCommentSchema = z.object({
+  classroomId: z.string().min(1),
+  streamId: z.string().min(1),
+  userId: z.string().min(1),
+  comment: z.string().min(1),
+  attachment: z.instanceof(File).optional(),
+});
+
+export type AddPrivateComment = z.infer<typeof addPrivateCommentSchema>;
+
+export const deleteCommentSchema = z.object({
+  classroomId: z.string().min(1),
+  streamId: z.string().min(1),
+  commentId: z.string().min(1),
+});
+
+export type DeleteComment = z.infer<typeof deleteCommentSchema>;
+
+export const deletePrivateCommentSchema = z.object({
+  classroomId: z.string().min(1),
+  streamId: z.string().min(1),
+  commentId: z.string().min(1),
+});
+
+export type DeletePrivateComment = z.infer<typeof deletePrivateCommentSchema>;
+
+export const addUserToClassSchema = z.object({
+  classroomId: z.string().min(1),
+  email: z.email(),
+});
+
+export type AddUserToClass = z.infer<typeof addUserToClassSchema>;
+
+export const deleteEnrolledClassSchema = z.object({
+  enrolledClassId: z.string().min(1),
+  classId: z.string().min(1),
+});
+
+export type DeleteEnrolledClass = z.infer<typeof deleteEnrolledClassSchema>;
+
+export const addMessageSchema = z.object({
+  classroomId: z.string().min(1),
+  message: z.string().min(1),
+  attachments: z.array(z.instanceof(File)).optional(),
+});
+
+export type AddMessage = z.infer<typeof addMessageSchema>;
+
+export const createTopicSchema = z.object({
+  classroomId: z.string().min(1),
+  topicName: z.string().min(1),
+});
+
+export type CreateTopic = z.infer<typeof createTopicSchema>;
+
+export const updateTopicSchema = z.object({
+  classroomId: z.string().min(1),
+  topicId: z.string().min(1),
+  topicName: z.string().min(1),
+});
+
+export type UpdateTopic = z.infer<typeof updateTopicSchema>;
+
+export const deleteTopicSchema = z.object({
+  topicId: z.string().min(1),
+});
+
+export type DeleteTopic = z.infer<typeof deleteTopicSchema>;
