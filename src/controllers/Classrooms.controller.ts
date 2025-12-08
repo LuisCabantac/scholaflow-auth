@@ -39,6 +39,10 @@ import {
   getClassroomByClassId,
   getEnrolledClassByClassAndUserId,
 } from "../lib/service/classroom.js";
+import {
+  getAllStreamsByClassId,
+  getStreamsByClassIdPaginated,
+} from "../lib/service/stream.js";
 
 export async function getAllClasses(ctx: Context) {
   try {
@@ -1039,6 +1043,103 @@ export async function addCommentToStreamController(ctx: Context) {
   } catch (error) {
     return ctx.json({
       message: error instanceof Error ? error.message : "Failed to add comment",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
+export async function getStreamsByClassId(ctx: Context) {
+  try {
+    const classId = ctx.req.param("classId");
+    const { page = "1", pageSize = "10", paginated } = ctx.req.query();
+
+    if (!classId) {
+      return ctx.json({
+        message: "Class ID parameter is required",
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const isPaginated = paginated === undefined || paginated === "true";
+    const pageNumber = parseInt(page as string);
+    const size = parseInt(pageSize as string);
+    const offset = (pageNumber - 1) * size;
+
+    const { isValidSession, userId } = await validateSession(ctx);
+
+    if (!isValidSession) {
+      return ctx.json({
+        message: "Invalid or expired token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const classroom = await getClassroomByClassId(classId);
+
+    if (!classroom) {
+      return ctx.json({
+        message: "Classroom not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    if (!isPaginated) {
+      const allStreams = await getAllStreamsByClassId(classId);
+
+      const filteredStreams =
+        allStreams?.filter(
+          (stream) =>
+            ((stream.announceTo.includes(userId as string) &&
+              stream.announceToAll === false) ||
+              stream.announceToAll ||
+              stream.userId === userId ||
+              classroom.teacherId === userId) &&
+            ((stream.scheduledAt
+              ? new Date(stream.scheduledAt) < new Date()
+              : true) ||
+              classroom.teacherId === userId)
+        ) || [];
+
+      return ctx.json({
+        message: "Streams retrieved successfully",
+        statusCode: 200,
+        data: filteredStreams,
+        error: null,
+      });
+    }
+
+    const { data: streams, total } = await getStreamsByClassIdPaginated(
+      classId,
+      userId as string,
+      classroom.teacherId,
+      size,
+      offset
+    );
+
+    const totalPages = Math.ceil(total / size);
+
+    return ctx.json({
+      message: "Streams retrieved successfully",
+      statusCode: 200,
+      data: streams,
+      pagination: {
+        page: pageNumber,
+        pageSize: size,
+        total,
+        totalPages,
+        hasNextPage: pageNumber < totalPages,
+        hasPreviousPage: pageNumber > 1,
+      },
+      error: null,
+    });
+  } catch (error) {
+    return ctx.json({
+      message:
+        error instanceof Error ? error.message : "Failed to retrieve streams",
       error: "Internal Server Error",
       statusCode: 500,
     });
