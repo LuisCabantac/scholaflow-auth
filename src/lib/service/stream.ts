@@ -99,7 +99,7 @@ export async function getStreamsByClassIdPaginated(
       eq(stream.userId, userId),
       eq(stream.userId, teacherId),
       and(
-        sql`${stream.announceTo}::text[] @> ARRAY[${userId}]`,
+        sql`${stream.announceTo} @> ARRAY[${userId}]::text[]`,
         eq(stream.announceToAll, false)
       )
     ),
