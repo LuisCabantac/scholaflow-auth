@@ -91,6 +91,8 @@ export async function getStreamsByClassIdPaginated(
 ): Promise<{ data: Stream[]; total: number }> {
   const now = new Date();
 
+  const arrayCondition = sql`${userId} = ANY(${stream.announceTo})`;
+
   const baseConditions = [
     eq(stream.classId, classId),
     ne(stream.type, "stream"),
@@ -98,10 +100,7 @@ export async function getStreamsByClassIdPaginated(
       eq(stream.announceToAll, true),
       eq(stream.userId, userId),
       eq(stream.userId, teacherId),
-      and(
-        sql`${userId} = ANY(${stream.announceTo})`,
-        eq(stream.announceToAll, false)
-      )
+      and(arrayCondition, eq(stream.announceToAll, false))
     ),
     or(
       sql`${stream.scheduledAt} IS NULL`,
