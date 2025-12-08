@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, ne } from "drizzle-orm";
+import { and, count, desc, eq, ilike, ne, or, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.js";
 import { stream } from "../../db/schema.js";
@@ -79,4 +79,70 @@ export async function getAllEnrolledClassesClassworks(
     : [];
 
   return classworks.filter((array): array is Stream[] => array !== null).flat();
+}
+
+export async function getStreamsByClassIdPaginated(
+  classId: string,
+  userId: string,
+  teacherId: string,
+  limit: number,
+  offset: number
+): Promise<{ data: Stream[]; total: number }> {
+  const now = new Date();
+
+  const [streams, countResult] = await Promise.all([
+    db
+      .select()
+      .from(stream)
+      .where(
+        and(
+          eq(stream.classId, classId),
+          ne(stream.type, "stream"),
+          or(
+            eq(stream.announceToAll, true),
+            eq(stream.userId, userId),
+            eq(stream.userId, teacherId),
+            and(
+              sql`${stream.announceTo}::text[] @> ARRAY[${userId}]`,
+              eq(stream.announceToAll, false)
+            )
+          ),
+          or(
+            sql`${stream.scheduledAt} IS NULL`,
+            sql`${stream.scheduledAt} < ${now}`,
+            eq(stream.userId, teacherId)
+          )
+        )
+      )
+      .orderBy(desc(stream.createdAt))
+      .limit(limit)
+      .offset(offset),
+    db
+      .select({ count: count() })
+      .from(stream)
+      .where(
+        and(
+          eq(stream.classId, classId),
+          ne(stream.type, "stream"),
+          or(
+            eq(stream.announceToAll, true),
+            eq(stream.userId, userId),
+            eq(stream.userId, teacherId),
+            and(
+              sql`${stream.announceTo}::text[] @> ARRAY[${userId}]`,
+              eq(stream.announceToAll, false)
+            )
+          ),
+          or(
+            sql`${stream.scheduledAt} IS NULL`,
+            sql`${stream.scheduledAt} < ${now}`,
+            eq(stream.userId, teacherId)
+          )
+        )
+      ),
+  ]);
+
+  const total = countResult[0]?.count || 0;
+
+  return { data: streams, total };
 }
