@@ -13,6 +13,7 @@ import {
   createClassroomSchema,
   createEnrolledClassSchema,
   addCommentSchema,
+  streamType,
 } from "../lib/schema/index.js";
 import {
   deleteAllClassworkByClassAndUserId,
@@ -1052,7 +1053,7 @@ export async function addCommentToStreamController(ctx: Context) {
 export async function getStreamsByClassId(ctx: Context) {
   try {
     const classId = ctx.req.param("classId");
-    const { page = "1", pageSize = "10", paginated } = ctx.req.query();
+    const { page = "1", pageSize = "10", paginated, type } = ctx.req.query();
 
     if (!classId) {
       return ctx.json({
@@ -1087,10 +1088,25 @@ export async function getStreamsByClassId(ctx: Context) {
       });
     }
 
+    let validatedType: string | undefined;
+    if (type) {
+      const isValidStreamType = streamType.safeParse(type);
+
+      if (isValidStreamType.error) {
+        return ctx.json({
+          message: "Invalid stream type",
+          error: "Bad Request",
+          statusCode: 400,
+        });
+      }
+
+      validatedType = isValidStreamType.data;
+    }
+
     if (!isPaginated) {
       const allStreams = await getAllStreamsByClassId(classId);
 
-      const filteredStreams =
+      let filteredStreams =
         allStreams?.filter(
           (stream) =>
             ((stream.announceTo.includes(userId as string) &&
@@ -1103,6 +1119,12 @@ export async function getStreamsByClassId(ctx: Context) {
               : true) ||
               classroom.teacherId === userId)
         ) || [];
+
+      if (validatedType) {
+        filteredStreams = filteredStreams.filter(
+          (stream) => stream.type === validatedType
+        );
+      }
 
       return ctx.json({
         message: "Streams retrieved successfully",
@@ -1117,7 +1139,8 @@ export async function getStreamsByClassId(ctx: Context) {
       userId as string,
       classroom.teacherId,
       size,
-      offset
+      offset,
+      validatedType
     );
 
     const totalPages = Math.ceil(total / size);

@@ -86,60 +86,49 @@ export async function getStreamsByClassIdPaginated(
   userId: string,
   teacherId: string,
   limit: number,
-  offset: number
+  offset: number,
+  streamType?: string
 ): Promise<{ data: Stream[]; total: number }> {
   const now = new Date();
+
+  const baseConditions = [
+    eq(stream.classId, classId),
+    ne(stream.type, "stream"),
+    or(
+      eq(stream.announceToAll, true),
+      eq(stream.userId, userId),
+      eq(stream.userId, teacherId),
+      and(
+        sql`${stream.announceTo}::text[] @> ARRAY[${userId}]`,
+        eq(stream.announceToAll, false)
+      )
+    ),
+    or(
+      sql`${stream.scheduledAt} IS NULL`,
+      sql`${stream.scheduledAt} < ${now}`,
+      eq(stream.userId, teacherId)
+    ),
+  ];
+
+  const whereClause = streamType
+    ? and(
+        ...baseConditions,
+        eq(
+          stream.type,
+          streamType as "assignment" | "quiz" | "question" | "material"
+        )
+      )
+    : and(...baseConditions);
 
   const [streams, countResult] = await Promise.all([
     db
       .select()
       .from(stream)
-      .where(
-        and(
-          eq(stream.classId, classId),
-          ne(stream.type, "stream"),
-          or(
-            eq(stream.announceToAll, true),
-            eq(stream.userId, userId),
-            eq(stream.userId, teacherId),
-            and(
-              sql`${stream.announceTo}::text[] @> ARRAY[${userId}]`,
-              eq(stream.announceToAll, false)
-            )
-          ),
-          or(
-            sql`${stream.scheduledAt} IS NULL`,
-            sql`${stream.scheduledAt} < ${now}`,
-            eq(stream.userId, teacherId)
-          )
-        )
-      )
+      .where(whereClause)
       .orderBy(desc(stream.createdAt))
       .limit(limit)
       .offset(offset),
-    db
-      .select({ count: count() })
-      .from(stream)
-      .where(
-        and(
-          eq(stream.classId, classId),
-          ne(stream.type, "stream"),
-          or(
-            eq(stream.announceToAll, true),
-            eq(stream.userId, userId),
-            eq(stream.userId, teacherId),
-            and(
-              sql`${stream.announceTo}::text[] @> ARRAY[${userId}]`,
-              eq(stream.announceToAll, false)
-            )
-          ),
-          or(
-            sql`${stream.scheduledAt} IS NULL`,
-            sql`${stream.scheduledAt} < ${now}`,
-            eq(stream.userId, teacherId)
-          )
-        )
-      ),
+    db.select({ count: count() }).from(stream).where(whereClause),
   ]);
 
   const total = countResult[0]?.count || 0;
