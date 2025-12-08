@@ -331,7 +331,16 @@ export async function getClassByClassId(ctx: Context) {
       });
     }
 
-    return ctx.json({ message: "Class found", data, statusCode: 200 });
+    const enrolledClasses = await db
+      .select()
+      .from(enrolledClass)
+      .where(eq(enrolledClass.classId, classId));
+
+    return ctx.json({
+      message: "Class found",
+      data: { ...data, enrolledClasses: enrolledClasses?.length ?? 0 },
+      statusCode: 200,
+    });
   } catch (error) {
     return ctx.json({
       message:
