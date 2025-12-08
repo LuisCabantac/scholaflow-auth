@@ -7,6 +7,7 @@ import {
   updateClassroom,
   joinClassroom,
   joinClassroomByClassCode,
+  getStreamsByClassId,
 } from "../controllers/Classrooms.controller.js";
 
 const app = new Hono();
@@ -22,5 +23,7 @@ app.delete("/:classId", (c) => deleteClassroom(c));
 app.post("/join/:classId", (c) => joinClassroom(c));
 
 app.post("/join/code/:classCode", (c) => joinClassroomByClassCode(c));
+
+app.get("/:classId/streams", (c) => getStreamsByClassId(c));
 
 export default app;
