@@ -19,7 +19,7 @@ export async function getAllStreamsByClassId(
   const data = await db
     .select()
     .from(stream)
-    .where(and(eq(stream.classId, classId), ne(stream.type, "stream")))
+    .where(eq(stream.classId, classId))
     .orderBy(desc(stream.createdAt));
 
   return !data?.length ? null : data;
@@ -87,10 +87,7 @@ export async function getStreamsByClassIdPaginated(
   offset: number,
   streamType?: string
 ): Promise<{ data: Stream[]; total: number }> {
-  const baseConditions = [
-    eq(stream.classId, classId),
-    ne(stream.type, "stream"),
-  ];
+  const baseConditions = [eq(stream.classId, classId)];
 
   if (streamType) {
     baseConditions.push(

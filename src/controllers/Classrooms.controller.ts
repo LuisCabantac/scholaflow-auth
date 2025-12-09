@@ -1104,29 +1104,29 @@ export async function getStreamsByClassId(ctx: Context) {
       validatedType = isValidStreamType.data;
     }
 
+    const allStreams = await getAllStreamsByClassId(classId);
+
+    let filteredStreams =
+      allStreams?.filter(
+        (stream) =>
+          ((stream.announceTo.includes(userId as string) &&
+            stream.announceToAll === false) ||
+            stream.announceToAll ||
+            stream.userId === userId ||
+            classroom.teacherId === userId) &&
+          ((stream.scheduledAt
+            ? new Date(stream.scheduledAt) < new Date()
+            : true) ||
+            classroom.teacherId === userId)
+      ) || [];
+
+    if (validatedType) {
+      filteredStreams = filteredStreams.filter(
+        (stream) => stream.type === validatedType
+      );
+    }
+
     if (!isPaginated) {
-      const allStreams = await getAllStreamsByClassId(classId);
-
-      let filteredStreams =
-        allStreams?.filter(
-          (stream) =>
-            ((stream.announceTo.includes(userId as string) &&
-              stream.announceToAll === false) ||
-              stream.announceToAll ||
-              stream.userId === userId ||
-              classroom.teacherId === userId) &&
-            ((stream.scheduledAt
-              ? new Date(stream.scheduledAt) < new Date()
-              : true) ||
-              classroom.teacherId === userId)
-        ) || [];
-
-      if (validatedType) {
-        filteredStreams = filteredStreams.filter(
-          (stream) => stream.type === validatedType
-        );
-      }
-
       return ctx.json({
         message: "Streams retrieved successfully",
         statusCode: 200,
@@ -1135,32 +1135,14 @@ export async function getStreamsByClassId(ctx: Context) {
       });
     }
 
-    const { data: streams, total } = await getStreamsByClassIdPaginated(
-      classId,
-      size,
-      offset,
-      validatedType
-    );
-
-    const filteredStreams = streams.filter(
-      (stream: Stream) =>
-        ((stream.announceTo.includes(userId as string) &&
-          stream.announceToAll === false) ||
-          stream.announceToAll ||
-          stream.userId === userId ||
-          classroom.teacherId === userId) &&
-        ((stream.scheduledAt
-          ? new Date(stream.scheduledAt) < new Date()
-          : true) ||
-          classroom.teacherId === userId)
-    );
-
+    const total = filteredStreams.length;
     const totalPages = Math.ceil(total / size);
+    const paginatedStreams = filteredStreams.slice(offset, offset + size);
 
     return ctx.json({
       message: "Streams retrieved successfully",
       statusCode: 200,
-      data: filteredStreams,
+      data: paginatedStreams,
       pagination: {
         page: pageNumber,
         pageSize: size,
