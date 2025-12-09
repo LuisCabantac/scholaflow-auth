@@ -15,6 +15,7 @@ import {
   addCommentSchema,
   streamType,
 } from "../lib/schema/index.js";
+import type { Stream } from "../lib/schema/index.js";
 import {
   deleteAllClassworkByClassAndUserId,
   deleteAllClassworksByClassId,
@@ -1136,11 +1137,22 @@ export async function getStreamsByClassId(ctx: Context) {
 
     const { data: streams, total } = await getStreamsByClassIdPaginated(
       classId,
-      userId as string,
-      classroom.teacherId,
       size,
       offset,
       validatedType
+    );
+
+    const filteredStreams = streams.filter(
+      (stream: Stream) =>
+        ((stream.announceTo.includes(userId as string) &&
+          stream.announceToAll === false) ||
+          stream.announceToAll ||
+          stream.userId === userId ||
+          classroom.teacherId === userId) &&
+        ((stream.scheduledAt
+          ? new Date(stream.scheduledAt) < new Date()
+          : true) ||
+          classroom.teacherId === userId)
     );
 
     const totalPages = Math.ceil(total / size);
@@ -1148,7 +1160,7 @@ export async function getStreamsByClassId(ctx: Context) {
     return ctx.json({
       message: "Streams retrieved successfully",
       statusCode: 200,
-      data: streams,
+      data: filteredStreams,
       pagination: {
         page: pageNumber,
         pageSize: size,

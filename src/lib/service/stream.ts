@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, ne } from "drizzle-orm";
 
 import { db } from "../../db/index.js";
 import { stream } from "../../db/schema.js";
@@ -83,41 +83,25 @@ export async function getAllEnrolledClassesClassworks(
 
 export async function getStreamsByClassIdPaginated(
   classId: string,
-  userId: string,
-  teacherId: string,
   limit: number,
   offset: number,
   streamType?: string
 ): Promise<{ data: Stream[]; total: number }> {
-  const now = new Date();
-
-  const arrayCondition = sql`${userId} = ANY(${stream.announceTo})`;
-
   const baseConditions = [
     eq(stream.classId, classId),
     ne(stream.type, "stream"),
-    or(
-      eq(stream.announceToAll, true),
-      eq(stream.userId, userId),
-      eq(stream.userId, teacherId),
-      and(arrayCondition, eq(stream.announceToAll, false))
-    ),
-    or(
-      sql`${stream.scheduledAt} IS NULL`,
-      sql`${stream.scheduledAt} < ${now}`,
-      eq(stream.userId, teacherId)
-    ),
   ];
 
-  const whereClause = streamType
-    ? and(
-        ...baseConditions,
-        eq(
-          stream.type,
-          streamType as "assignment" | "quiz" | "question" | "material"
-        )
+  if (streamType) {
+    baseConditions.push(
+      eq(
+        stream.type,
+        streamType as "assignment" | "quiz" | "question" | "material"
       )
-    : and(...baseConditions);
+    );
+  }
+
+  const whereClause = and(...baseConditions);
 
   const [streams, countResult] = await Promise.all([
     db
