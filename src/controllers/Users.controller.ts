@@ -96,6 +96,8 @@ export async function getUserById(ctx: Context) {
 
     const [data] = await db.select().from(user).where(eq(user.id, userId));
 
+    const [providerId] = await db.select({providerId: account.providerId}).from(account).where(eq(account.userId, userId));
+
     if (!data) {
       return ctx.json({
         message: "User not found",
@@ -104,7 +106,7 @@ export async function getUserById(ctx: Context) {
       });
     }
 
-    return ctx.json({ message: "User found", data, statusCode: 200 });
+    return ctx.json({ message: "User found", data: {...data, ...providerId}, statusCode: 200 });
   } catch (error) {
     return ctx.json({
       message:
