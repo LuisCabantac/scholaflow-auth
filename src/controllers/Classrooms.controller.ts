@@ -37,6 +37,7 @@ import {
 import {
   getAllEnrolledClassesByClassId,
   getAllEnrolledClassesIdByClassId,
+  getAllEnrolledUsersByClassId,
   getClassroomByClassCode,
   getClassroomByClassId,
   getEnrolledClassByClassAndUserId,
@@ -429,12 +430,12 @@ export async function createClassroom(ctx: Context) {
     const startOfToday = new Date(
       now.getFullYear(),
       now.getMonth(),
-      now.getDate()
+      now.getDate(),
     );
     const endOfToday = new Date(
       now.getFullYear(),
       now.getMonth(),
-      now.getDate() + 1
+      now.getDate() + 1,
     );
 
     const classroomsCreatedToday = await db
@@ -692,7 +693,7 @@ export async function deleteClassroom(ctx: Context) {
     if (classroomData.teacherId !== userId) {
       const currentUserEnrolledClass = await getEnrolledClassByClassAndUserId(
         userId,
-        classId
+        classId,
       );
 
       if (!currentUserEnrolledClass) {
@@ -706,7 +707,7 @@ export async function deleteClassroom(ctx: Context) {
       await deleteAllClassworkByClassAndUserId(
         currentUserEnrolledClass.classId,
         currentUserEnrolledClass.userId,
-        ctx
+        ctx,
       );
 
       const [data] = await db
@@ -714,8 +715,8 @@ export async function deleteClassroom(ctx: Context) {
         .where(
           and(
             eq(enrolledClass.classId, classId),
-            eq(enrolledClass.userId, userId)
-          )
+            eq(enrolledClass.userId, userId),
+          ),
         )
         .returning();
 
@@ -868,7 +869,7 @@ export async function joinClassroom(ctx: Context) {
       classroomData.teacherId,
       data.id,
       data.name,
-      `/classroom/class/${data.classId}`
+      `/classroom/class/${data.classId}`,
     );
 
     return ctx.json({
@@ -938,7 +939,7 @@ export async function joinClassroomByClassCode(ctx: Context) {
 
     const isCurrentlyEnrolled = await getEnrolledClassByClassAndUserId(
       userId,
-      classroomData.id
+      classroomData.id,
     );
 
     if (isCurrentlyEnrolled) {
@@ -994,7 +995,7 @@ export async function joinClassroomByClassCode(ctx: Context) {
       classroomData.teacherId,
       data.id,
       data.name,
-      `/classroom/class/${data.classId}`
+      `/classroom/class/${data.classId}`,
     );
 
     return ctx.json({
@@ -1033,7 +1034,7 @@ export async function addCommentToStreamController(ctx: Context) {
       userId,
       userData.name,
       userData.image,
-      ctx
+      ctx,
     );
 
     return ctx.json({
@@ -1117,12 +1118,12 @@ export async function getStreamsByClassId(ctx: Context) {
           ((stream.scheduledAt
             ? new Date(stream.scheduledAt) < new Date()
             : true) ||
-            classroom.teacherId === userId)
+            classroom.teacherId === userId),
       ) || [];
 
     if (validatedType) {
       filteredStreams = filteredStreams.filter(
-        (stream) => stream.type === validatedType
+        (stream) => stream.type === validatedType,
       );
     }
 
@@ -1181,7 +1182,7 @@ export async function getEnrolledClassesByClassId(ctx: Context) {
     const size = parseInt(pageSize as string);
     const offset = (pageNumber - 1) * size;
 
-    const { isValidSession, userId } = await validateSession(ctx);
+    const { isValidSession } = await validateSession(ctx);
 
     if (!isValidSession) {
       return ctx.json({
@@ -1201,7 +1202,17 @@ export async function getEnrolledClassesByClassId(ctx: Context) {
       });
     }
 
-    const allEnrolledClasses = await getAllEnrolledClassesByClassId(classId);
+    const enrolledClasses = await getAllEnrolledUsersByClassId(classId);
+
+    const allEnrolledClasses = [
+      {
+        id: classroom.id,
+        userId: classroom.teacherId,
+        userName: classroom.teacherName,
+        userImage: classroom.teacherImage,
+      },
+      ...(enrolledClasses ?? []),
+    ];
 
     if (!isPaginated) {
       return ctx.json({
@@ -1214,7 +1225,10 @@ export async function getEnrolledClassesByClassId(ctx: Context) {
 
     const total = allEnrolledClasses?.length ?? 0;
     const totalPages = Math.ceil(total / size);
-    const paginatedEnrolledClasses = allEnrolledClasses?.slice(offset, offset + size);
+    const paginatedEnrolledClasses = allEnrolledClasses?.slice(
+      offset,
+      offset + size,
+    );
 
     return ctx.json({
       message: "Enrolled classes retrieved successfully",
@@ -1233,7 +1247,9 @@ export async function getEnrolledClassesByClassId(ctx: Context) {
   } catch (error) {
     return ctx.json({
       message:
-        error instanceof Error ? error.message : "Failed to retrieve enrolled classes",
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve enrolled classes",
       error: "Internal Server Error",
       statusCode: 500,
     });
