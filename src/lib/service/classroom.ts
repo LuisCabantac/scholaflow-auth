@@ -2,10 +2,14 @@ import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "../../db/index.js";
 import { classroom, enrolledClass } from "../../db/schema.js";
-import type { Classroom, EnrolledClass } from "../schema/index.js";
+import type {
+  Classroom,
+  EnrolledClass,
+  EnrolledUser,
+} from "../schema/index.js";
 
 export async function getAllEnrolledClassesByClassId(
-  classId: string
+  classId: string,
 ): Promise<EnrolledClass[] | null> {
   const data = await db
     .select()
@@ -15,8 +19,24 @@ export async function getAllEnrolledClassesByClassId(
   return !data?.length ? null : data;
 }
 
+export async function getAllEnrolledUsersByClassId(
+  classId: string,
+): Promise<EnrolledUser[] | null> {
+  const data = await db
+    .select({
+      id: enrolledClass.id,
+      userId: enrolledClass.userId,
+      userName: enrolledClass.userName,
+      userImage: enrolledClass.userImage,
+    })
+    .from(enrolledClass)
+    .where(eq(enrolledClass.classId, classId));
+
+  return !data?.length ? null : data;
+}
+
 export async function getClassroomByClassId(
-  classId: string
+  classId: string,
 ): Promise<Classroom | null> {
   const [data] = await db
     .select()
@@ -27,7 +47,7 @@ export async function getClassroomByClassId(
 }
 
 export async function getClassroomByClassCode(
-  classCode: string
+  classCode: string,
 ): Promise<Classroom | null> {
   const [data] = await db
     .select()
@@ -39,20 +59,20 @@ export async function getClassroomByClassCode(
 
 export async function getEnrolledClassByClassAndUserId(
   userId: string,
-  classId: string
+  classId: string,
 ): Promise<EnrolledClass | null> {
   const [data] = await db
     .select()
     .from(enrolledClass)
     .where(
-      and(eq(enrolledClass.classId, classId), eq(enrolledClass.userId, userId))
+      and(eq(enrolledClass.classId, classId), eq(enrolledClass.userId, userId)),
     );
 
   return data || null;
 }
 
 export async function getAllEnrolledClassesIdByClassId(
-  classId: string
+  classId: string,
 ): Promise<string[] | null> {
   const data = await db
     .select({ id: enrolledClass.id })
@@ -63,7 +83,7 @@ export async function getAllEnrolledClassesIdByClassId(
 }
 
 export async function getAllEnrolledClassesByUserId(
-  userId: string
+  userId: string,
 ): Promise<EnrolledClass[] | null> {
   const data = await db
     .select()
@@ -75,7 +95,7 @@ export async function getAllEnrolledClassesByUserId(
 }
 
 export async function getEnrolledClassByEnrolledClassId(
-  enrolledClassId: string
+  enrolledClassId: string,
 ): Promise<EnrolledClass | null> {
   const [data] = await db
     .select()

@@ -182,6 +182,20 @@ export const enrolledClassSchema = z.object({
 
 export type EnrolledClass = z.infer<typeof enrolledClassSchema>;
 
+export const enrolledUserSchema = enrolledClassSchema.omit({
+  classId: true,
+  name: true,
+  cardBackground: true,
+  subject: true,
+  section: true,
+  teacherName: true,
+  teacherImage: true,
+  illustrationIndex: true,
+  createdAt: true,
+});
+
+export type EnrolledUser = z.infer<typeof enrolledUserSchema>;
+
 export const createEnrolledClassSchema = enrolledClassSchema.omit({
   id: true,
   createdAt: true,
@@ -378,7 +392,7 @@ export const streamPrivateCommentSchema = z.object({
 export type StreamPrivateComment = z.infer<typeof streamPrivateCommentSchema>;
 
 export const createStreamPrivateCommentSchema = streamPrivateCommentSchema.omit(
-  { id: true, createdAt: true, updatedAt: true }
+  { id: true, createdAt: true, updatedAt: true },
 );
 
 export const editStreamPrivateCommentSchema = streamPrivateCommentSchema.omit({
