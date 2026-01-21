@@ -1162,3 +1162,80 @@ export async function getStreamsByClassId(ctx: Context) {
     });
   }
 }
+
+export async function getEnrolledClassesByClassId(ctx: Context) {
+  try {
+    const classId = ctx.req.param("classId");
+    const { page = "1", pageSize = "10", paginated } = ctx.req.query();
+
+    if (!classId) {
+      return ctx.json({
+        message: "Class ID parameter is required",
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const isPaginated = paginated === undefined || paginated === "true";
+    const pageNumber = parseInt(page as string);
+    const size = parseInt(pageSize as string);
+    const offset = (pageNumber - 1) * size;
+
+    const { isValidSession, userId } = await validateSession(ctx);
+
+    if (!isValidSession) {
+      return ctx.json({
+        message: "Invalid or expired token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const classroom = await getClassroomByClassId(classId);
+
+    if (!classroom) {
+      return ctx.json({
+        message: "Classroom not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    const allEnrolledClasses = await getAllEnrolledClassesByClassId(classId);
+
+    if (!isPaginated) {
+      return ctx.json({
+        message: "Enrolled classes retrieved successfully",
+        statusCode: 200,
+        data: allEnrolledClasses,
+        error: null,
+      });
+    }
+
+    const total = allEnrolledClasses?.length ?? 0;
+    const totalPages = Math.ceil(total / size);
+    const paginatedEnrolledClasses = allEnrolledClasses?.slice(offset, offset + size);
+
+    return ctx.json({
+      message: "Enrolled classes retrieved successfully",
+      statusCode: 200,
+      data: paginatedEnrolledClasses,
+      pagination: {
+        page: pageNumber,
+        pageSize: size,
+        total,
+        totalPages,
+        hasNextPage: pageNumber < totalPages,
+        hasPreviousPage: pageNumber > 1,
+      },
+      error: null,
+    });
+  } catch (error) {
+    return ctx.json({
+      message:
+        error instanceof Error ? error.message : "Failed to retrieve enrolled classes",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
