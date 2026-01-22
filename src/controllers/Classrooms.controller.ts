@@ -14,6 +14,7 @@ import {
   createEnrolledClassSchema,
   addCommentSchema,
   streamType,
+  emailSchema,
 } from "../lib/schema/index.js";
 import type { Stream } from "../lib/schema/index.js";
 import {
@@ -46,6 +47,8 @@ import {
   getAllStreamsByClassId,
   getStreamsByClassIdPaginated,
 } from "../lib/service/stream.js";
+import { getUserByEmail } from "./Users.controller.js";
+import { getUserByEmailAddress } from "../lib/service/user.js";
 
 export async function getAllClasses(ctx: Context) {
   try {
@@ -295,7 +298,7 @@ export async function getAllClasses(ctx: Context) {
 
 export async function getClassByClassId(ctx: Context) {
   try {
-    const classId = ctx.req.param("classId");
+    const { classId } = ctx.req.param();
 
     if (!classId) {
       return ctx.json({
@@ -495,7 +498,7 @@ export async function updateClassroom(ctx: Context) {
       });
     }
 
-    const classId = ctx.req.param("classId");
+    const { classId } = ctx.req.param();
 
     if (!classId) {
       return ctx.json({
@@ -1014,6 +1017,7 @@ export async function joinClassroomByClassCode(ctx: Context) {
     });
   }
 }
+
 export async function addCommentToStreamController(ctx: Context) {
   try {
     const { isValidSession, userId, userData } = await validateSession(ctx);
@@ -1054,7 +1058,7 @@ export async function addCommentToStreamController(ctx: Context) {
 
 export async function getStreamsByClassId(ctx: Context) {
   try {
-    const classId = ctx.req.param("classId");
+    const { classId } = ctx.req.param();
     const { page = "1", pageSize = "10", paginated, type } = ctx.req.query();
 
     if (!classId) {
@@ -1166,7 +1170,7 @@ export async function getStreamsByClassId(ctx: Context) {
 
 export async function getEnrolledClassesByClassId(ctx: Context) {
   try {
-    const classId = ctx.req.param("classId");
+    const { classId } = ctx.req.param();
     const { page = "1", pageSize = "10", paginated } = ctx.req.query();
 
     if (!classId) {
@@ -1250,6 +1254,163 @@ export async function getEnrolledClassesByClassId(ctx: Context) {
         error instanceof Error
           ? error.message
           : "Failed to retrieve enrolled classes",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
+export async function addUserToClassByUserEmail(ctx: Context) {
+  try {
+    const body = await ctx.req.json();
+    const { classId } = ctx.req.param();
+
+    if (!body || Object.keys(body).length === 0) {
+      return ctx.json({
+        message: "Request body is required",
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const { email } = body;
+
+    if (!classId) {
+      return ctx.json({
+        message: "Class id parameter is required",
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const isValidEmail = emailSchema.safeParse(email);
+
+    if (isValidEmail.error) {
+      return ctx.json({
+        message: "Invalid email format",
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const { isValidSession, userData, userId } = await validateSession(ctx);
+
+    if (!isValidSession) {
+      return ctx.json({
+        message: "Invalid or expired token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    if (!userData) {
+      return ctx.json({
+        message: "User not found in session",
+        error: "Forbidden",
+        statusCode: 403,
+      });
+    }
+
+    const classroomData = await getClassroomByClassId(classId);
+
+    if (!classroomData) {
+      return ctx.json({
+        message: "Classroom not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    if (classroomData.teacherId !== userId) {
+      return ctx.json({
+        message: "Only the classroom teacher can add users by email",
+        error: "Forbidden",
+        statusCode: 403,
+      });
+    }
+
+    const teacherData = await getUserByEmailAddress(isValidEmail.data);
+
+    if (classroomData.teacherId !== teacherData.id) {
+      return ctx.json({
+        message: "You can only add students to this classroom by email",
+        error: "Forbidden",
+        statusCode: 403,
+      });
+    }
+
+    const isCurrentlyEnrolled = await getEnrolledClassByClassAndUserId(
+      userData.id,
+      classroomData.id,
+    );
+
+    if (isCurrentlyEnrolled) {
+      return ctx.json({
+        message: "This user is already enrolled in this classroom",
+        error: "Conflict",
+        statusCode: 409,
+      });
+    }
+
+    const newEnrolledClass = {
+      classId: classroomData.id,
+      userId: userData.id,
+      userName: userData.name,
+      userImage: userData.image,
+      name: classroomData.name,
+      subject: classroomData.subject,
+      section: classroomData.section,
+      teacherName: classroomData.teacherName,
+      teacherImage: classroomData.teacherImage,
+      cardBackground: classroomData.cardBackground,
+      illustrationIndex: classroomData.illustrationIndex,
+    };
+
+    const result = createEnrolledClassSchema.safeParse(newEnrolledClass);
+
+    if (result.error) {
+      return ctx.json({
+        message: result.error.issues.map((issue) => issue.message).join(", "),
+        error: "Bad Request",
+        statusCode: 400,
+      });
+    }
+
+    const [data] = await db
+      .insert(enrolledClass)
+      .values(result.data)
+      .returning();
+
+    if (!data) {
+      return ctx.json({
+        message: "Failed to add this user to the classroom",
+        error: "Internal Server Error",
+        statusCode: 500,
+      });
+    }
+
+    await sendNotification(
+      "addToClass",
+      classroomData.teacherId,
+      classroomData.teacherName,
+      classroomData.teacherImage,
+      userData.id,
+      data.id,
+      data.name,
+      `/classroom/class/${data.classId}`,
+    );
+
+    return ctx.json({
+      message: `${userData.name} has been successfully added to the classroom`,
+      data,
+      statusCode: 201,
+    });
+  } catch (error) {
+    return ctx.json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to added this user in the classroom. Please try again",
       error: "Internal Server Error",
       statusCode: 500,
     });
