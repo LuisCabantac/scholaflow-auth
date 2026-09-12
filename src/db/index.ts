@@ -2,7 +2,7 @@ import { config } from "dotenv";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 
-config({ path: ".env.local" });
+config({ path: ".env" });
 
 const connectionString = process.env.DATABASE_URL || "";
 
