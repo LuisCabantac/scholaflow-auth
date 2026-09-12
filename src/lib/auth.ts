@@ -136,6 +136,6 @@ export const auth = betterAuth({
     openAPI(),
   ],
   advanced: {
-    disableOriginCheck: true,
+    disableOriginCheck: process.env.NODE_ENV !== "production",
   },
 });
