@@ -3,7 +3,6 @@ import { expo } from "@better-auth/expo";
 import { openAPI, jwt } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
-import { inferAdditionalFields } from "better-auth/client/plugins";
 
 import { db } from "../db/index.js";
 import { schema } from "../db/schema.js";
@@ -42,38 +41,12 @@ export const auth = betterAuth({
     sendOnSignUp: true,
   },
   user: {
-    additionalFields: {
-      role: {
-        type: "string",
-        required: true,
-        defaultValue: "user",
-      },
-      schoolName: {
-        type: "string",
-        required: false,
-        defaultValue: null,
-      },
-    },
     deleteUser: {
       enabled: true,
       sendDeleteAccountVerification: sendDeleteAccountEmail,
     },
   },
   plugins: [
-    inferAdditionalFields({
-      user: {
-        role: {
-          type: "string",
-          required: true,
-          defaultValue: "user",
-        },
-        schoolName: {
-          type: "string",
-          required: false,
-          defaultValue: null,
-        },
-      },
-    }),
     expo({ disableOriginOverride: true }) as BetterAuthPlugin,
     openAPI(),
     jwt(),
