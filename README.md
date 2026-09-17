@@ -2,19 +2,19 @@
 
 [![Hono](https://img.shields.io/badge/Hono-4.13-E36002?logo=hono)](https://hono.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-7.0-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Better Auth](https://img.shields.io/badge/Better_Auth-1.7-purple)](https://www.better-auth.com/)\
+[![Better Auth](https://img.shields.io/badge/Better_Auth-1.7-purple)](https://www.better-auth.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)](https://www.postgresql.org/)
 [![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?logo=drizzle)](https://orm.drizzle.team/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A lightweight, high-performance authentication and session microservice for the [ScholaFlow](https://github.com/LuisCabantac/scholaflow) LMS ecosystem. Built with Hono, Better Auth, Drizzle ORM, and PostgreSQL.
+A dedicated, high-performance authentication and session microservice for the [ScholaFlow](https://github.com/LuisCabantac/scholaflow) LMS ecosystem. Built with Hono, Better Auth, Drizzle ORM, and PostgreSQL.
 
 ---
 
 ## 1. Overview & Key Capabilities
 
-ScholaFlow Auth decouples identity management, credentials, and user sessions from the primary web application. Leveraging Hono's minimal footprint and Better Auth's plugin system with JWT key pair generation (JWKS), it provides an ultra-fast auth gateway capable of servicing distributed microservices and multiple frontend clients simultaneously.
+ScholaFlow Auth decouples identity management, credentials, and user sessions from the primary web application and backend domain services. Leveraging Hono's minimal footprint and Better Auth's plugin system with JWT key pair generation (JWKS), it provides an ultra-fast auth gateway capable of servicing distributed microservices and multiple frontend clients simultaneously.
 
 ### Core Capabilities
 
@@ -22,7 +22,7 @@ ScholaFlow Auth decouples identity management, credentials, and user sessions fr
 - **Multi-Client Session Management:** Supports web clients via secure cookies, mobile apps via `@better-auth/expo`, and desktop/API clients using JWT tokens.
 - **Flexible Social & Credential Auth:** Google OAuth 2.0 and email/password authentication with configurable password complexity requirements and email verification gates.
 - **Automated Lifecycle Emails:** Cleanly abstracted transactional mailers (email verification, password resets, and account deletion confirmation) dispatched through Gmail SMTP via Nodemailer.
-- **Custom User & LMS Schemas:** Extends core Better Auth user schemas with application-specific metadata (`role`, `schoolName`) alongside the core LMS data models (classrooms, streams, classwork, comments, notifications) mapped directly to PostgreSQL tables via Drizzle ORM.
+- **Clean Auth Data Model:** Streamlined Drizzle ORM schema dedicated strictly to identity management (`user`, `session`, `account`, `verification`, and `jwks`).
 - **Environment-Aware CORS:** Configurable origin verification dynamically allowing local development ports (`3000`, `8080`, `9245`, `9246`), Wails desktop schemes (`wails://`, `http://wails.localhost`), and canonical production URLs.
 
 ---
@@ -60,7 +60,7 @@ flowchart TD
 
     subgraph DataLayer ["Data Persistence Layer"]
         Postgres[("PostgreSQL Database")]
-        Schema["Drizzle Schema (Users, Sessions, Accounts, JWKS)"]
+        Schema["Drizzle Auth Schema (user, session, account, verification, jwks)"]
     end
 
     WebClient -->|"HTTP Requests (Cookies)"| CORSMiddleware
@@ -105,7 +105,6 @@ flowchart TD
   - `jwt()`: Generates cryptographically signed JWTs and exposes the standard JSON Web Key Set (JWKS) endpoint at `/api/auth/jwks`. Key pairs are persisted in the `jwks` table.
   - `expo()`: Cross-platform mobile OAuth and session synchronization with native deep links.
   - `openAPI()`: OpenAPI schema generation and API contract definitions.
-  - `inferAdditionalFields()`: Type-safe schema extensions for custom user metadata (`role`, `schoolName`).
 
 ### Database & Persistence
 
@@ -127,11 +126,11 @@ scholaflow-auth/
 ├── src/
 │   ├── db/
 │   │   ├── index.ts              # Postgres.js client and Drizzle database connection
-│   │   └── schema.ts             # PostgreSQL schema (Auth, JWKS, Classes, Streams, Roles)
+│   │   └── schema.ts             # Dedicated PostgreSQL Auth schema (user, session, account, verification, jwks)
 │   ├── lib/
 │   │   ├── service/
 │   │   │   └── email.ts          # Nodemailer transporter and transactional email dispatchers
-│   │   └── auth.ts               # Better Auth engine configuration, JWT plugin, and schemas
+│   │   └── auth.ts               # Better Auth engine configuration and JWT plugin setup
 │   ├── middleware/
 │   │   └── cors.ts               # Centralized CORS middleware and trusted origin registry
 │   └── index.ts                  # Hono application entry point and HTTP server listener
