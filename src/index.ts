@@ -11,7 +11,7 @@ const app = new Hono();
 
 app.get("/", (c) => {
   return c.json({
-    message: "ScholaFlow API",
+    message: "ScholaFlow Auth",
     version: "1.0.0",
     status: "running",
     environment: process.env.NODE_ENV || "development",
