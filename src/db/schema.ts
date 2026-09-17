@@ -117,6 +117,8 @@ export const jwks = pgTable("jwks", {
     .$defaultFn(() => new Date())
     .notNull(),
   expiresAt: timestamp("expires_at"),
+  alg: text("alg"),
+  crv: text("crv"),
 });
 
 export const notification = pgTable("notification", {
